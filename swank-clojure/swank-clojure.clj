@@ -427,8 +427,7 @@
          ns (or (when sym-ns (create-ns (symbol sym-ns)))
                 (when ns-name (create-ns (symbol ns-name)))
                 *emacs-ns*)
-         publics? (not= ns *emacs-ns*)
-         vars (vals (if publics? (ns-map ns) (ns-publics ns)))
+         vars (vals (if sym-ns (ns-publics ns) (ns-map ns)))
          matches (sort (vars-start-with sym-name vars))]
      (if sym-ns
        (list (map (partial str sym-ns "/") matches)
