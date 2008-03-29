@@ -11,8 +11,11 @@
 ;;;      latest CVS version of slime (this has been untested for any
 ;;;      other version). (Latest as of 2008-03-27)
 ;;;
-;;;   2. Use script that will start clojure while providing java a
-;;;      pid, name it "clojure", and place it in your PATH.
+;;;   2. Use a script that will start clojure while providing java a
+;;;      pid, name it "clojure", and place it in your PATH. If no pid
+;;;      is provided, swank-clojure will fallback on JDK
+;;;      implementation specific methods of getting the pid. It may
+;;;      not work on other JVMs.
 ;;;
 ;;;      For an example of a script that does this, see bin/clojure in
 ;;;      the git repository at:
@@ -80,6 +83,11 @@
          (str (apply str (replicate (- min-len len) \0)) hex)
          hex)))
   {:tag String})
+
+(defn get-pid []
+  (or
+   (. System (getProperty "pid"))
+   (nth (. (.. java.lang.management.ManagementFactory (getRuntimeMXBean) (getName)) (split "@")) 0)))
 
 (defn position
   "Finds the first position of item within col. Returns nil if not
@@ -322,7 +330,7 @@
    *socket-out*
    `(:indentation-update
      ~(indentation-for (create-ns 'user))))
-  `(:pid ~(. System (getProperty "pid"))
+  `(:pid ~(get-pid)
      :package (:name ~(str (ns-name *emacs-ns*))
                :prompt ~(str (ns-name *emacs-ns*)))
      :lisp-implementation (:type "clojure")
