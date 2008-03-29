@@ -47,6 +47,7 @@
                   OutputStreamWriter FileWriter Writer)
         '(clojure.lang LineNumberingPushbackReader)
         '(java.net ServerSocket Socket)
+        ; '(sun.jvmstat.monitor MonitoredHost)
         ; '(com.sun.jdi VirtualMachine)
         )
 
@@ -113,10 +114,6 @@
             (if-let* ~(drop 2 bindings) ~then ~else)
           ~else)
        then)))
-
-(defn eval-in-ns [ns sexp]
-  (binding [*ns* ns]
-    (clojure/eval sexp)))
 
 ;; Basic Networking
 
@@ -324,8 +321,16 @@
      :lisp-implementation (:type "clojure")
      :version "2008-03-27"))
 
+
 (defn slime-eval [sexp]
-  (eval-in-ns *emacs-ns* sexp))
+  (binding [*ns* *emacs-ns*]
+    (let [result (clojure/eval sexp)]
+      (when (not= *ns* *emacs-ns*)
+        (let [new-ns-name (str (ns-name *ns*))]
+          (write-packet
+           *socket-out*
+           `(:new-package ~new-ns-name ~new-ns-name))))
+      result)))
 
 (defslime listener-eval [sexp & ignore]
   (let [result (slime-eval (read-str sexp))]
@@ -409,7 +414,13 @@
 
 (defslime-same describe-symbol describe-function)
 
+(defslime list-all-package-names [nicknames? & ignore]
+  (map (comp str ns-name) (all-ns)))
 
+(defslime set-package [ns & ignore]
+  (if (some #(= ns %) (map (comp str ns-name) (all-ns)))
+    (list ns ns)
+    (throw (new Exception (str "Invalid NS " ns)))))
 
 (defslime quit-lisp [& ignore]
   (. System (exit 0)))
