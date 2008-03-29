@@ -44,9 +44,11 @@
 (clojure/refer 'clojure)
 
 (import '(java.io InputStreamReader PushbackReader StringReader Reader
-                  OutputStreamWriter FileWriter Writer)
+                  OutputStreamWriter FileWriter Writer
+                  File)
         '(clojure.lang LineNumberingPushbackReader)
         '(java.net ServerSocket Socket)
+        '(java.util.zip ZipFile)
         ; '(sun.jvmstat.monitor MonitoredHost)
         ; '(com.sun.jdi VirtualMachine)
         )
@@ -252,6 +254,11 @@
   (proxy [Writer] []
     ))
 
+(defn write-string [string]
+  (write-packet
+   *socket-out*
+   `(:write-string ~(str string "\n"))))
+
 (defn emacs-rex [sexp package thread id & stuff]
   (println "erex recv'd" (pr-str sexp))
   (flush)
@@ -267,7 +274,7 @@
          (catch java.lang.Throwable e
            (println e)
            (flush)
-           (write-packet *socket-out* `(:write-string ~(str (throwable-stack-trace e) "\n")))
+           (write-string (throwable-stack-trace e))
            (write-packet *socket-out* `(:return (:abort) ~*emacs-id*))))
         (do
           (write-packet *socket-out* `(:return (:ok nil) ~*emacs-id*))
@@ -421,6 +428,49 @@
   (if (some #(= ns %) (map (comp str ns-name) (all-ns)))
     (list ns ns)
     (throw (new Exception (str "Invalid NS " ns)))))
+
+(defn slime-find-file-in-dir [#^File file #^String dir]
+  (let [file-name (. file (getPath))
+        child (new File (new File dir) file-name)]
+    (or (when (. child (exists))
+          `(:file ~(. child (getPath))))
+        (try
+         (let [zipfile (new ZipFile dir)]
+           (when (. zipfile (getEntry file-name))
+             `(:zip ~dir ~file-name)))
+         (catch java.lang.Throwable e false)))))
+
+(defn slime-find-file-in-paths [#^String file paths]
+  (let [f (new File file)]
+    (if (. f (isAbsolute))
+      `(:file ~file)
+      (first (filter identity (map (partial slime-find-file-in-dir f) paths))))))
+
+(defn get-path-prop [prop]
+  (seq (.. System
+           (getProperty prop)
+           (split (. File pathSeparator)))))
+
+(defn slime-search-paths []
+  (concat (get-path-prop "user.dir")
+          (get-path-prop "java.class.path")
+          (get-path-prop "sun.boot.class.path")))
+
+(defslime find-definitions-for-emacs [name & ignore]
+  (let [sym-name (symbol name)
+        vars (vals (ns-map *emacs-ns*))
+        metas (map meta vars)
+        definition
+        (fn definition [meta]
+          (if-let path (slime-find-file-in-paths (:file meta) (slime-search-paths))
+            `(~(str "(defn " (:name meta) ")")
+              (:location
+               ~path
+               (:line ~(:line meta))
+               nil))
+            `(~(str (:name meta))
+              (:error "Source definition not found."))))]
+    (map definition (filter #(= (:name %) sym-name) metas))))
 
 (defslime quit-lisp [& ignore]
   (. System (exit 0)))
