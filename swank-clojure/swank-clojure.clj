@@ -472,6 +472,13 @@
               (:error "Source definition not found."))))]
     (map definition (filter #(= (:name %) sym-name) metas))))
 
+
+(defslime set-default-directory [directory & ignore]
+  ;; incomplete solution, will change search path for find-definitions
+  ;; but will not work for load-file etc.
+  (. System (setProperty "user.dir" directory))
+  directory)
+
 (defslime quit-lisp [& ignore]
   (. System (exit 0)))
 
