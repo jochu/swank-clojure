@@ -381,17 +381,35 @@
           :else (recur (inc i))))))
   {:tag String})
 
+(defn symbol-name-parts
+  ([symbol]
+     (symbol-name-parts symbol "user"))
+  ([#^String symbol default-ns]
+     (let [ns-pos (. symbol (indexOf (int \/)))]
+       (if (< ns-pos 0)
+         [default-ns symbol]
+         [(. symbol (substring 0 ns-pos))
+          (. symbol (substring (+ ns-pos 1)))]))))
+
 (defslime simple-completions [pattern ns & ignore]
   (try
-   (let [ns (if ns (create-ns (symbol (eval ns))) *emacs-ns*)
-         vars (vals (ns-map ns))
-         matches (sort (vars-start-with pattern vars))]
-     (println "completion checking on " pattern " for" matches)
-     (flush)
-     (list matches
-           (if matches
-             (reduce common-prefix matches)
-             pattern)))
+   (let [ns-name (eval ns)
+         [sym-ns sym-name] (symbol-name-parts pattern nil)
+         ns (or (when sym-ns (create-ns (symbol sym-ns)))
+                (when ns-name (create-ns (symbol ns-name)))
+                *emacs-ns*)
+         publics? (not= ns *emacs-ns*)
+         vars (vals (if publics? (ns-map ns) (ns-publics ns)))
+         matches (sort (vars-start-with sym-name vars))]
+     (if sym-ns
+       (list (map (partial str sym-ns "/") matches)
+             (if matches
+               (str sym-ns "/" (reduce common-prefix matches))
+               pattern))
+       (list matches
+             (if matches
+               (reduce common-prefix matches)
+               pattern))))
    (catch java.lang.Throwable t
      (list nil pattern))))
 
