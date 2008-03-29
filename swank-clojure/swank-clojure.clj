@@ -253,19 +253,37 @@
 (def *emacs-ns* nil)
 (def *emacs-thread* nil)
 (def *emacs-id* nil)
+(def *emacs-out* (ref nil))
 
 (defn throwable-stack-trace [#^Throwable t]
   (with-out-str
    (. t (printStackTrace (new java.io.PrintWriter *out*)))))
 
-(defn swank-writer [#^Writer out]
-  (proxy [Writer] []
-    ))
+(defn write-string
+  ([string]
+     (write-string *socket-out* string))
+  ([out string]
+     (write-packet
+      out
+      `(:write-string ~(str string)))))
 
-(defn write-string [string]
-  (write-packet
-   *socket-out*
-   `(:write-string ~(str string "\n"))))
+(defn swank-writer [#^Writer out continue?]
+  (let [writer (new java.io.StringWriter)]
+    (on-thread-do
+     (.. Thread (currentThread) (setName "swank-writer"))
+     (loop []
+       (. Thread (sleep 200))
+       (when (continue?)
+         (let [len (.. writer (getBuffer) (length))]
+           (when (> len 0)
+             (write-string out
+                           (.. writer
+                               (getBuffer)
+                               (substring 0 len)))
+             (. out (flush))
+             (.. writer (getBuffer) (delete 0 len))))
+         (recur))))
+    writer))
 
 (defn emacs-rex [sexp package thread id & stuff]
   (println "erex recv'd" (pr-str sexp))
@@ -302,8 +320,10 @@
     (. port-file (write (str port "\n")))))
 
 (defn swank-handler [#^Socket socket]
-  (let [socket-in (new InputStreamReader (. socket (getInputStream)) *charset*)]
-    (binding [*socket-out* (new OutputStreamWriter (. socket (getOutputStream)) *charset*)]
+  (let [socket-in (new InputStreamReader (. socket (getInputStream)) *charset*)
+        socket-out (new OutputStreamWriter (. socket (getOutputStream)) *charset*)]
+    (binding [*socket-out* socket-out
+              *emacs-out* (swank-writer socket-out (fn [] (. socket (isConnected))))]
       (loop [packet (read-packet socket-in)]
         (dispatch packet)
         (recur (read-packet socket-in))))))
@@ -338,7 +358,8 @@
 
 
 (defn slime-eval [sexp]
-  (binding [*ns* *emacs-ns*]
+  (binding [*ns* *emacs-ns*
+            *out* *emacs-out*]
     (let [result (clojure/eval sexp)]
       (when (not= *ns* *emacs-ns*)
         (let [new-ns-name (str (ns-name *ns*))]
