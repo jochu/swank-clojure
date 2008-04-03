@@ -446,14 +446,16 @@
 (defslime swank-macroexpand-1 [sexp & ignore]
   (let [s (read-str sexp)]
     (if (seq? s)
-      (pr-str (macroexpand-1 s))
+      (binding [*ns* *emacs-ns*]
+       (clojure/pr-str (clojure/macroexpand-1 s)))
       sexp)))
 
 (defslime swank-macroexpand [sexp & ignore]
   (let [s (read-str sexp)]
     (if (seq? s)
-     (pr-str (macroexpand s))
-     sexp)))
+      (binding [*ns* *emacs-ns*]
+        (clojure/pr-str (clojure/macroexpand s)))
+      sexp)))
 
 ;; doesn't quite do what it's supposed to... but it's here for now
 (defslime-same swank-macroexpand-all swank-macroexpand)
