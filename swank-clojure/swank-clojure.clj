@@ -84,10 +84,11 @@
          hex)))
   {:tag String})
 
-(defn get-pid []
-  (or
-   (. System (getProperty "pid"))
-   (nth (. (.. java.lang.management.ManagementFactory (getRuntimeMXBean) (getName)) (split "@")) 0)))
+(defn get-pid
+  ([]
+     (or (. System (getProperty "pid"))
+         (nth (. (.. java.lang.management.ManagementFactory (getRuntimeMXBean) (getName)) (split "@")) 0)))
+  {:tag String})
 
 (defn position
   "Finds the first position of item within col. Returns nil if not
@@ -97,7 +98,8 @@
        (when coll
          (if (= (first coll) item)
            i
-           (recur (rest coll) (inc i)))))))
+           (recur (rest coll) (inc i))))))
+  {:tag Integer})
 
 (defn starts-with? [#^String prefix #^String string]
   (. string (startsWith prefix)))
@@ -253,7 +255,7 @@
 (def *emacs-ns* nil)
 (def *emacs-thread* nil)
 (def *emacs-id* nil)
-(def *emacs-out* (ref nil))
+(def *emacs-out* nil)
 
 (defn throwable-stack-trace [#^Throwable t]
   (with-out-str
@@ -475,6 +477,8 @@
     (list ns ns)
     (throw (new Exception (str "Invalid NS " ns)))))
 
+;; Find definition
+
 (defn slime-find-file-in-dir [#^File file #^String dir]
   (let [file-name (. file (getPath))
         child (new File (new File dir) file-name)]
@@ -517,7 +521,6 @@
             `(~(str (:name meta))
               (:error "Source definition not found."))))]
     (map definition (filter #(= (:name %) sym-name) metas))))
-
 
 (defslime set-default-directory [directory & ignore]
   ;; incomplete solution, will change search path for find-definitions
