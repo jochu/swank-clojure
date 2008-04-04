@@ -17,9 +17,9 @@
 ;;;      implementation specific methods of getting the pid. It may
 ;;;      not work on other JVMs.
 ;;;
-;;;      For an example of a script that does this, see bin/clojure in
-;;;      the git repository at:
-;;;         http://clojure.codestuffs.com/pub/clojure-emacs.git
+;;;      For an example of a script that does this, see
+;;;      sh-script/clojure in the clojure-extra repository at:
+;;;         http://clojure.codestuffs.com/
 ;;;
 ;;;      If this is not possible, you must edit swank-clojure.el and
 ;;;      change the slime-lisp-implementations.
