@@ -358,6 +358,10 @@
      :lisp-implementation (:type "clojure")
      :version "2008-03-27"))
 
+(defn slime-read [str-sexp]
+  (binding [*ns* *emacs-ns*
+            *out* *emacs-out*]
+    (swank/read-str str-sexp)))
 
 (defn slime-eval [sexp]
   (binding [*ns* *emacs-ns*
@@ -371,7 +375,7 @@
       result)))
 
 (defslime listener-eval [sexp & ignore]
-  (let [result (slime-eval (read-str sexp))]
+  (let [result (slime-eval (slime-read sexp))]
     `(:values ~(pr-str result))))
 
 (defslime operator-arglist [sym namespace & ignore]
@@ -392,7 +396,7 @@
     (list "T" "0")))
 
 (defslime interactive-eval [sexp & ignore]
-  (let [result (slime-eval (read-str sexp))]
+  (let [result (slime-eval (slime-read sexp))]
     (str "=> " (pr-str result))))
 
 (defn vars-start-with
@@ -444,14 +448,14 @@
      (list nil pattern))))
 
 (defslime swank-macroexpand-1 [sexp & ignore]
-  (let [s (read-str sexp)]
+  (let [s (slime-read sexp)]
     (if (seq? s)
       (binding [*ns* *emacs-ns*]
        (clojure/pr-str (clojure/macroexpand-1 s)))
       sexp)))
 
 (defslime swank-macroexpand [sexp & ignore]
-  (let [s (read-str sexp)]
+  (let [s (slime-read sexp)]
     (if (seq? s)
       (binding [*ns* *emacs-ns*]
         (clojure/pr-str (clojure/macroexpand s)))
