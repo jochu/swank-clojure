@@ -361,7 +361,12 @@
 (defn slime-read [str-sexp]
   (binding [*ns* *emacs-ns*
             *out* *emacs-out*]
-    (swank/read-str str-sexp)))
+    (try
+     (swank/read-str str-sexp)
+     (catch Exception e
+       (when (not (.contains (.getMessage e) "EOF"))
+         nil
+         (throw e))))))
 
 (defn slime-eval [sexp]
   (binding [*ns* *emacs-ns*
@@ -375,8 +380,9 @@
       result)))
 
 (defslime listener-eval [sexp & ignore]
-  (let [result (slime-eval (slime-read sexp))]
-    `(:values ~(pr-str result))))
+  (when-let r (slime-read sexp)
+    (let [result (slime-eval r)]
+      `(:values ~(pr-str result)))))
 
 (defslime operator-arglist [sym namespace & ignore]
   (if-let* [ns-name (or namespace "user")
