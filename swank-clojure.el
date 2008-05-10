@@ -8,16 +8,17 @@
 ;;; See swank-clojure.clj for instructions
 ;;;
 
-(eval-and-compile 
-  (defvar clojure-swank-path
-    (let ((path (or (locate-library "swank-clojure") load-file-name)))
-      (and path (file-name-directory path)))
-    "Directory containing the swank-clojure package. This is used
-     to load the supporting clojure library swank."))
-
 (add-to-list 'slime-lisp-implementations
              '(clojure ("clojure") :init clojure-init)
              t)
+
+(eval-and-compile 
+  (defvar clojure-swank-path
+    (let ((path (file-truename (or (locate-library "swank-clojure")
+                                   load-file-name))))
+      (and path (file-name-directory path)))
+    "Directory containing the swank-clojure package. This is used
+     to load the supporting clojure library swank."))
 
 (defun clojure-init (file encoding)
   (format "%S\n\n%S\n\n"
@@ -39,8 +40,7 @@
 
 (defun clojure-slime-mode-hook ()
   (slime-mode 1)
-  (set (make-local-variable 'slime-find-buffer-package-function)
-       'find-clojure-package)
+  (set (make-local-variable 'slime-find-buffer-package-function) 'find-clojure-package)
   (make-local-hook 'slime-indentation-update-hooks)
   (add-hook 'slime-indentation-update-hooks 'clojure-update-indentation))
 
@@ -48,3 +48,5 @@
   (put sym 'clojure-indent-function indent))
 
 (add-hook 'clojure-mode-hook 'clojure-slime-mode-hook t)
+
+(provide 'swank-clojure)
