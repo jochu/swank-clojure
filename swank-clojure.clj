@@ -288,8 +288,9 @@
     writer))
 
 (defn emacs-rex [sexp package thread id & stuff]
-  (println "erex recv'd" (pr-str sexp))
-  (flush)
+  (comment
+    (println "erex recv'd" (pr-str sexp))
+    (flush))
   
   (binding [*emacs-ns* (create-ns (symbol (or package "user")))
             *emacs-thread* thread
@@ -300,18 +301,21 @@
         (try
          (write-packet *socket-out* `(:return (:ok ~(apply sfn args)) ~*emacs-id*))
          (catch java.lang.Throwable e
-           (println e)
-           (flush)
+           (comment
+             (println e)
+             (flush))
            (write-string (throwable-stack-trace e))
            (write-packet *socket-out* `(:return (:abort) ~*emacs-id*))))
         (do
           (write-packet *socket-out* `(:return (:ok nil) ~*emacs-id*))
-          (println "encountered unknown:" sexp)
-          (flush))))))
+          (comment
+            (println "encountered unknown:" sexp)
+            (flush)))))))
 
 (defn dispatch [packet]
-  (println "recv'd packet" (pr-str packet))
-  (flush)
+  (comment
+    (println "recv'd packet" (pr-str packet))
+    (flush))
   (when (seq? packet)
     (let [type (first packet)]
       (when (= type :emacs-rex)
@@ -452,6 +456,8 @@
                pattern))))
    (catch java.lang.Throwable t
      (list nil pattern))))
+
+(defslime-same completions simple-completions)
 
 (defslime swank-macroexpand-1 [sexp & ignore]
   (let [s (slime-read sexp)]
