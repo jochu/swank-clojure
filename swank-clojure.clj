@@ -395,6 +395,14 @@
             the-args (:arglists (meta the-sym))]
      (pr-str the-args)))
 
+(defslime arglist-for-echo-area [arg & keywords]
+  (let [f (eval arg)
+        opts (apply hash-map (map eval keywords))
+        test (when-let sym-str (ffirst f) (ns-resolve *emacs-ns* (symbol sym-str)))]
+    (if test
+      (pr-str (:arglists (meta test)))
+      "")))
+
 (defslime load-file [file-name & ignore]
   (let [load (clojure/load-file file-name)]
     (str "Loaded: " file-name " => " load)))
