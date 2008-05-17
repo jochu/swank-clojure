@@ -8,10 +8,6 @@
 ;;; See swank-clojure.clj for instructions
 ;;;
 
-(add-to-list 'slime-lisp-implementations
-             '(clojure ("clojure") :init clojure-init)
-             t)
-
 (eval-and-compile 
   (defvar clojure-swank-path
     (let ((path (file-truename (or (locate-library "swank-clojure")
@@ -20,15 +16,15 @@
     "Directory containing the swank-clojure package. This is used
      to load the supporting clojure library swank."))
 
-(defun clojure-init (file encoding)
-  (format "%S\n\n%S\n\n"
-	  `(load-file ,(format "%s/swank-clojure.clj" clojure-swank-path))
-          `(swank/on-thread-do (swank/start-swank ,file))))
+(add-to-list 'slime-lisp-implementations
+             '(clojure ("clojure") :init clojure-init)
+             t)
 
-(defun clojure-slime ()
-  (interactive)
-  (let ((slime-find-buffer-package-function 'find-clojure-package))
-    (slime 'clojure)))
+(defun clojure-init (file encoding)
+  (format "%S\n\n%S\n\n%S\n\n"
+          `(load-file ,(file-truename (format "%s/swank-clojure.clj" clojure-swank-path)))
+          `(swank/ignore-protocol-version ,slime-protocol-version)
+          `(swank/start-server ,file)))
 
 (defun find-clojure-package ()
   (let ((regexp (concat "^(\\(clojure/\\)?in-ns\\>[ \t']*"
@@ -47,6 +43,21 @@
 (defun clojure-update-indentation [sym indent]
   (put sym 'clojure-indent-function indent))
 
+;; Change the repl to be more clojure friendly
+(defun clojure-slime-repl-modify-syntax ()
+  (when (string-match-p "\\*slime-repl clojure\\*" (buffer-name))
+    (modify-syntax-entry ?~ "'   ")
+    (modify-syntax-entry ?, "    ")
+    (modify-syntax-entry ?\{ "(}")
+    (modify-syntax-entry ?\} "){")
+    (modify-syntax-entry ?\[ "(]")
+    (modify-syntax-entry ?\] ")[")
+    (modify-syntax-entry ?^ "'")
+    (when (featurep 'clojure-paredit)
+      (define-key slime-repl-mode-map "{" 'paredit-open-brace)
+      (define-key slime-repl-mode-map "}" 'paredit-close-brace))))
+
+(add-hook 'slime-repl-mode-hook 'clojure-slime-repl-modify-syntax t)
 (add-hook 'clojure-mode-hook 'clojure-slime-mode-hook t)
 
 (provide 'swank-clojure)
