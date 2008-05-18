@@ -98,6 +98,17 @@
   ([coll] (ffilter identity coll))
   ([fn coll]
      (first (filter fn coll))))
+
+(defn position
+  "Finds the first position of item within col. Returns nil if not
+   found."
+  ([item coll]
+     (loop [coll coll, i 0]
+       (when coll
+         (if (= (first coll) item)
+           i
+           (recur (rest coll) (inc i))))))
+  {:tag Integer})
 
 ;;;; Global variables / constants / configs
 
@@ -166,6 +177,9 @@
 
 ;; The protocol version (to ignore)
 (def *protocol-version* (ref "just say yes"))
+
+;; Whether or not to set emacs indentation
+(def *configure-emacs-indentation* true)
 
 
 ;;;; Threads
@@ -322,6 +336,20 @@
 
 (defn ignore-protocol-version [version]
   (dosync (ref-set *protocol-version* version)))
+
+
+;;;; Hooks
+
+(defn add-hook [place function]
+  (dosync
+   (alter place conj function)))
+
+(defn run-hook [functions & arguments]
+  (doseq f @functions
+    (apply f arguments)))
+
+;; Pre reply hooks
+(def *pre-reply-hook* (ref nil))
 
 
 ;;;; Bad stream mojo (but better than before)
@@ -897,9 +925,11 @@
      (try
       (binding [*buffer-package* buffer-package
                 *pending-continuations* (cons id *pending-continuations*)]
-        (send-to-emacs `(:return ~(thread-name (current-thread))
-                                 (:ok ~(eval form))
-                                 ~id)))
+        (let [result (eval form)]
+          (run-hook *pre-reply-hook*)
+          (send-to-emacs `(:return ~(thread-name (current-thread))
+                                   (:ok ~result)
+                                   ~id))))
       (catch Throwable t
         (let [#^Throwable t t]
           (send-to-emacs
@@ -1185,43 +1215,88 @@
     (map definition (filter #(= (:name %) sym-name) metas))))
 
 ;;;; Indentation & indentation cache
-(comment
- (def *configure-emacs-indentation* t)
- (defn need-full-indentation-update?
-   "Return true if the whole indentation cache should be updated. This
+
+(defn need-full-indentation-update?
+  "Return true if the whole indentation cache should be updated. This
    is a heuristic to avoid scanning all symbols all the time: instead,
    we only do a full scan if the set of packages as changed."
-   ([connection]
-      (> (count (set/difference
-                 (set (all-ns))
-                 (set @(connection :indentation-cache-packages))))
-         0)))
+  ([connection]
+     (not= (hash (all-ns)) (hash @(connection :indentation-cache-packages)))))
 
- (defn update-indentation-delta
-   "Update the cache and return the changes in a (symbol '. indent) list.
+(defn var-indentation [var]
+  (flet [(fn indent-loc [meta]
+           (or (meta :indent)
+               (when-let arglists (:arglists meta)
+                 (let [arglist (apply min-key #(or (position '& %1) 0) arglists)
+                       amp (position '& arglist)
+                       body (position 'body arglist)]
+                   (when (and body amp
+                              (= (- body amp) 1))
+                     amp)))))
+         (fn indent-cons [meta]
+           (when-let indent-to (indent-loc meta)
+             (when (> indent-to 0)
+               `(~(str (:name meta)) . ~indent-to))))]
+    (indent-cons (meta var))))
+
+(defn var-indentations-for [nss]
+  (filter identity
+          (map (comp swank/var-indentation val)
+               (filter (comp var? val) (mapcat ns-map nss)))))
+
+(defn every-other [coll]
+  (when coll
+    (lazy-cons
+     (first coll)
+     (every-other (drop 2 coll)))))
+
+(defn update-indentation-delta
+  "Update the cache and return the changes in a (symbol '. indent) list.
    If FORCE is true then check all symbols, otherwise only check
    symbols belonging to the buffer package"
-   ([cache force]
-      (if force
-        (doseq sym (mapcat )))))
+  ([cache force]
+     (let [cache-val @cache]
+       (flet [(fn in-cache? [[sym var]]
+                (let [indent (var-indentation var)]
+                  (when indent
+                    (when-not (= (cache-val sym) indent)
+                      (list sym indent)))))
+              (fn considerations-for [nss]
+                (let [vars (filter (comp var? val) (mapcat ns-map nss))]
+                  (mapcat in-cache? vars)))]
+         (if force
+           (when-let updates (considerations-for (all-ns))
+             (dosync (apply alter cache assoc updates))
+             (every-other (rest updates)))
+           (let [ns (maybe-ns *buffer-package*)
+                 in-ns? (fn [[sym var]] (and (var? var) (= ns ((meta var) :ns))))]
+             (when ns
+               (when-let updates (filter identity (considerations-for (list ns)))
+                 (dosync (apply alter cache assoc updates))
+                 (every-other (rest updates))))))))))
 
- (defn perform-indentation-update
-   "Update the indentation cache in connection and update emacs.
+(defn perform-indentation-update
+  "Update the indentation cache in connection and update emacs.
    If force is true, then start again without considering the old cache."
-   ([connection force]
-      (let [cache (connection :indentation-cache)]
+  ([connection force]
+     (let [cache (connection :indentation-cache)]
+       (comment ;; I don't know why real swank wants to blow these away, it shouldn't matter
         (when force
-          (dosync (ref-set cache {})))
-        (let [delta (update-indentation-delta @cache force)]
-          )
-        )))
+          (dosync (ref-set cache {}))))
+       (let [delta (update-indentation-delta cache force)]
+         (dosync
+          (ref-set (connection :indentation-cache-packages) (hash (all-ns)))
+          (when delta
+            (send-to-emacs `(:indentation-update ~delta))))))))
 
- (defn sync-indentation-to-emacs
-   "Send any indentation updates to Emacs via emacs-connection"
-   ([]
-      (when *configure-emacs-indentation*
-        (let [full? (need-full-indentation-update? *emacs-connection*)]
-          (perform-indentation-update *emacs-connection* full?))))))
+(defn sync-indentation-to-emacs
+  "Send any indentation updates to Emacs via emacs-connection"
+  ([]
+     (when *configure-emacs-indentation*
+       (let [full? (need-full-indentation-update? *emacs-connection*)]
+         (perform-indentation-update *emacs-connection* full?)))))
+
+(add-hook *pre-reply-hook* #'sync-indentation-to-emacs)
 
 
 ;;;; source file cache (not needed)

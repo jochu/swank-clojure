@@ -36,11 +36,9 @@
 
 (defun clojure-slime-mode-hook ()
   (slime-mode 1)
-  (set (make-local-variable 'slime-find-buffer-package-function) 'find-clojure-package)
-  (make-local-hook 'slime-indentation-update-hooks)
-  (add-hook 'slime-indentation-update-hooks 'clojure-update-indentation))
+  (set (make-local-variable 'slime-find-buffer-package-function) 'find-clojure-package))
 
-(defun clojure-update-indentation [sym indent]
+(defun clojure-update-indentation (sym indent)
   (put sym 'clojure-indent-function indent))
 
 ;; Change the repl to be more clojure friendly
@@ -57,6 +55,7 @@
       (define-key slime-repl-mode-map "{" 'paredit-open-brace)
       (define-key slime-repl-mode-map "}" 'paredit-close-brace))))
 
+(add-hook 'slime-indentation-update-hooks 'clojure-update-indentation)
 (add-hook 'slime-repl-mode-hook 'clojure-slime-repl-modify-syntax t)
 (add-hook 'clojure-mode-hook 'clojure-slime-mode-hook t)
 
