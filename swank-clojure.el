@@ -8,6 +8,9 @@
 ;;; See swank-clojure.clj for instructions
 ;;;
 
+(eval-after-load "slime"
+  '(require 'clojure-mode))
+
 (eval-and-compile 
   (defvar clojure-swank-path
     (let ((path (file-truename (or (locate-library "swank-clojure")
@@ -44,6 +47,7 @@
 ;; Change the repl to be more clojure friendly
 (defun clojure-slime-repl-modify-syntax ()
   (when (string-match-p "\\*slime-repl clojure\\*" (buffer-name))
+    ;; modify syntax
     (modify-syntax-entry ?~ "'   ")
     (modify-syntax-entry ?, "    ")
     (modify-syntax-entry ?\{ "(}")
@@ -51,6 +55,11 @@
     (modify-syntax-entry ?\[ "(]")
     (modify-syntax-entry ?\] ")[")
     (modify-syntax-entry ?^ "'")
+
+    ;; set indentation function (already local)
+    (setq lisp-indent-function 'clojure-indent-function)
+    
+    ;; set paredit keys
     (when (featurep 'clojure-paredit)
       (define-key slime-repl-mode-map "{" 'paredit-open-brace)
       (define-key slime-repl-mode-map "}" 'paredit-close-brace))))
