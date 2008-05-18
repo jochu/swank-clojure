@@ -46,7 +46,7 @@
 
 ;; Change the repl to be more clojure friendly
 (defun clojure-slime-repl-modify-syntax ()
-  (when (string-match-p "\\*slime-repl clojure\\*" (buffer-name))
+  (when (string-match "\\*slime-repl clojure\\*" (buffer-name))
     ;; modify syntax
     (modify-syntax-entry ?~ "'   ")
     (modify-syntax-entry ?, "    ")

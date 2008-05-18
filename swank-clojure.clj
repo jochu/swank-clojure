@@ -1110,7 +1110,7 @@
      (cond
       (keyword? f) "[hsh]"
       (symbol? f) (let [var (ns-resolve (maybe-ns package) f)]
-                    (if-let args (and var ((meta var) :arglists))
+                    (if-let args (and var (:arglists (meta var)))
                       (pr-str args)
                       nil))
       :else nil))
@@ -1123,7 +1123,7 @@
    that start with a given pattern."
   ([#^String prefix vars]
      (filter (fn [#^String s]
-               (and s (not (. s isEmpty)) (. s startsWith prefix)))
+               (and s (not= 0 (. s length)) (. s startsWith prefix)))
              (map (comp str :name meta) vars))))
 
 (defn common-prefix
