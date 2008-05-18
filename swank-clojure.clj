@@ -819,7 +819,8 @@
            (throw (new Exception "Incoming connection doesn't know the password.")))))
      ;; Close connection if something goes wrong
      (catch Throwable e
-       (. new close)))
+       (. new close)
+       (throw e)))
     new))
 
 (defn serve-requests
@@ -977,7 +978,7 @@
         (let [#^Throwable t t]
           (when (= t *debug-quit*) (throw t)) 
           (let [level 1
-                message (list (. t getMessage) (str "  [Thrown " (class t) "]") nil)
+                message (list (if-let msg (. t getMessage) msg "No message.") (str "  [Thrown " (class t) "]") nil)
                 options '(("ABORT" "Return to SLIME's top level."))
                 error-stack (map list
                                  (iterate inc 0)
