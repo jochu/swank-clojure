@@ -735,7 +735,7 @@
                        :control-thread (ref nil)
                        :reader-thread (ref nil)
                        :repl-thread (ref nil)
-                       :indentation-cache (ref nil)
+                       :indentation-cache (ref {})
                        :indentation-cache-packages (ref nil))
     :else (comment
             (struct-map :socket-io socket-io
@@ -998,7 +998,6 @@
          ns (maybe-ns (or sym-ns package))
          vars (vals (if sym-ns (ns-publics ns) (ns-map ns)))
          matches (sort (vars-start-with sym-name vars))]
-     (send-to-emacs `(:write-string ~(str "sym ns=" sym-ns)))
      (if sym-ns
        (list (map (partial str sym-ns "/") matches)
              (if matches
@@ -1185,7 +1184,44 @@
               (:error "Source definition not found."))))]
     (map definition (filter #(= (:name %) sym-name) metas))))
 
+;;;; Indentation & indentation cache
+(comment
+ (def *configure-emacs-indentation* t)
+ (defn need-full-indentation-update?
+   "Return true if the whole indentation cache should be updated. This
+   is a heuristic to avoid scanning all symbols all the time: instead,
+   we only do a full scan if the set of packages as changed."
+   ([connection]
+      (> (count (set/difference
+                 (set (all-ns))
+                 (set @(connection :indentation-cache-packages))))
+         0)))
 
+ (defn update-indentation-delta
+   "Update the cache and return the changes in a (symbol '. indent) list.
+   If FORCE is true then check all symbols, otherwise only check
+   symbols belonging to the buffer package"
+   ([cache force]
+      (if force
+        (doseq sym (mapcat )))))
+
+ (defn perform-indentation-update
+   "Update the indentation cache in connection and update emacs.
+   If force is true, then start again without considering the old cache."
+   ([connection force]
+      (let [cache (connection :indentation-cache)]
+        (when force
+          (dosync (ref-set cache {})))
+        (let [delta (update-indentation-delta @cache force)]
+          )
+        )))
+
+ (defn sync-indentation-to-emacs
+   "Send any indentation updates to Emacs via emacs-connection"
+   ([]
+      (when *configure-emacs-indentation*
+        (let [full? (need-full-indentation-update? *emacs-connection*)]
+          (perform-indentation-update *emacs-connection* full?))))))
 
 
 ;;;; source file cache (not needed)

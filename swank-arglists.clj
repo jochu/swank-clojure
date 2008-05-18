@@ -1,4 +1,5 @@
 (clojure/in-ns 'swank)
+(swank-require :swank-c-p-c)
 
 (defn arglist-for-echo-area [raw-specs & options]
   (let [{:keys [arg-indices
