@@ -985,63 +985,6 @@
              (clojure/load-file file)))))
      @*modules*))
 
-;;;; Simple arglist display
-(defn operator-arglist [name package]
-  (let [var (ns-resolve (guess-buffer-package package) (symbol name))]
-    (if-let args (and var ((meta var) :arglists))
-      (pr-str args)
-      nil)))
-
-;;;; Simple completions
-
-(defn vars-start-with
-  "Runs through the provided vars and collects a list of the names
-   that start with a given pattern."
-  ([#^String prefix vars]
-     (filter (fn [#^String s]
-               (and s (not (. s isEmpty)) (. s startsWith prefix)))
-             (map (comp str :name meta) vars))))
-
-(defn common-prefix
-  "Returns the largest common prefix"
-  ([#^String a #^String b]
-     (let [limit (min (count a) (count b))]
-       (loop [i 0]
-         (cond
-          (or (= i limit) (not= (. a (charAt i)) (. b (charAt i)))) (. a (substring 0 i))
-          :else (recur (inc i))))))
-  {:tag String})
-
-(defn symbol-name-parts
-  ([symbol]
-     (symbol-name-parts symbol nil))
-  ([#^String symbol default-ns]
-     (let [ns-pos (. symbol (indexOf (int \/)))]
-       (if (< ns-pos 0)
-         [default-ns symbol]
-         [(. symbol (substring 0 ns-pos))
-          (. symbol (substring (+ ns-pos 1)))]))))
-
-(defn simple-completions [string package]
-  (try
-   (let [[sym-ns sym-name] (symbol-name-parts string)
-         ns (maybe-ns (or sym-ns package))
-         vars (vals (if sym-ns (ns-publics ns) (ns-map ns)))
-         matches (sort (vars-start-with sym-name vars))]
-     (if sym-ns
-       (list (map (partial str sym-ns "/") matches)
-             (if matches
-               (str sym-ns "/" (reduce common-prefix matches))
-               string))
-       (list matches
-             (if matches
-               (reduce common-prefix matches)
-               string))))
-   (catch java.lang.Throwable t
-     (send-to-emacs `(:write-string "fail"))
-     (list nil string))))
-
-
 ;;;; Evaluation
 
 (defmacro with-buffer-syntax [& body]
@@ -1112,6 +1055,69 @@
            ret (load-file file-name)]
        (list (pr-str ret)
              (str (/ (- (. System (nanoTime)) start) 1000000.0) " m"))))))
+
+
+;;;; Simple arglist display
+(defn operator-arglist [name package]
+  (try
+   (let [f (from-string name)]
+     (cond
+      (keyword? f) "[hsh]"
+      (symbol? f) (let [var (ns-resolve (maybe-ns package) f)]
+                    (if-let args (and var ((meta var) :arglists))
+                      (pr-str args)
+                      nil))
+      :else nil))
+   (catch Throwable t nil)))
+
+;;;; Simple completions
+
+(defn vars-start-with
+  "Runs through the provided vars and collects a list of the names
+   that start with a given pattern."
+  ([#^String prefix vars]
+     (filter (fn [#^String s]
+               (and s (not (. s isEmpty)) (. s startsWith prefix)))
+             (map (comp str :name meta) vars))))
+
+(defn common-prefix
+  "Returns the largest common prefix"
+  ([#^String a #^String b]
+     (let [limit (min (count a) (count b))]
+       (loop [i 0]
+         (cond
+          (or (= i limit) (not= (. a (charAt i)) (. b (charAt i)))) (. a (substring 0 i))
+          :else (recur (inc i))))))
+  {:tag String})
+
+(defn symbol-name-parts
+  ([symbol]
+     (symbol-name-parts symbol nil))
+  ([#^String symbol default-ns]
+     (let [ns-pos (. symbol (indexOf (int \/)))]
+       (if (< ns-pos 0)
+         [default-ns symbol]
+         [(. symbol (substring 0 ns-pos))
+          (. symbol (substring (+ ns-pos 1)))]))))
+
+(defn simple-completions [string package]
+  (try
+   (let [[sym-ns sym-name] (symbol-name-parts string)
+         ns (maybe-ns (or sym-ns package))
+         vars (vals (if sym-ns (ns-publics ns) (ns-map ns)))
+         matches (sort (vars-start-with sym-name vars))]
+     (if sym-ns
+       (list (map (partial str sym-ns "/") matches)
+             (if matches
+               (str sym-ns "/" (reduce common-prefix matches))
+               string))
+       (list matches
+             (if matches
+               (reduce common-prefix matches)
+               string))))
+   (catch java.lang.Throwable t
+     (send-to-emacs `(:write-string "fail"))
+     (list nil string))))
 
 ;;;; Macroexpansion
 
