@@ -44,15 +44,14 @@
 ;;;
 ;;; Known issues:
 ;;;  - Missing inspection, debugging, and a few other slime functions
-;;;  - Swank errors (non-existent functions etc) are displaying in the repl
 ;;;
 
-(clojure/in-ns 'clojure)
-
-;; This dirties the clojure namespace a little, but unfortunately we need
-;; the CL compatibility (t is thrown around by emacs to represent true)
-;; I may in the future write another ugly hack (like for the namespace issue)
-(def t true)
+;; (clojure/comment
+;;   (clojure/in-ns 'clojure)
+;;   ;; This dirties the clojure namespace a little, but unfortunately we need
+;;   ;; the CL compatibility (t is thrown around by emacs to represent true)
+;;   ;; I may in the future write another ugly hack (like for the namespace issue)
+;;   (def t true))
 
 (clojure/in-ns 'swank)
 (clojure/refer 'clojure :exclude '(load-file))
@@ -119,7 +118,7 @@
 ; (def #^String *default-charset* "iso-8859-1")
 
 ;; Whether debug is on
-(def #^Boolean *swank-debug?* true)
+(def #^Boolean *swank-debug?* false)
 
 ;; Whether to use redirect io or not
 (def #^Boolean *redirect-io* true)
@@ -229,7 +228,7 @@
   ([]
      (map key (seq (. Thread getAllStackTraces)))))
 
-(defn find-thread
+(defn find-thread-by-name
   ([name]
      (ffilter #(= name (thread-name %)) (list-threads)))
   {:tag Thread})
@@ -242,6 +241,30 @@
 (defn kill-thread
   ([#^Thread thread]
      (. thread interrupt)))
+
+(def *thread-map-next-id* (ref 1))
+(def *thread-map* (ref {}))
+
+(defn thread-map-clean []
+  (doseq [id t] @*thread-map*
+    (when (or (nil? t)
+              (not (thread-alive? t)))
+      (dosync
+       (alter *thread-map* dissoc id)))))
+
+(defn thread-id [thread]
+  (let [id (dosync 
+            (if-let entry (ffilter #(= (val %) thread) @*thread-map*)
+              (key entry)
+              (let [next-id @*thread-map-next-id*]
+                (alter *thread-map* assoc next-id thread)
+                (alter *thread-map-next-id* inc)
+                next-id)))]
+    (thread-map-clean)
+    id))
+
+(defn find-thread [id]
+  (@*thread-map* id))
 
 
 ;;;; Socket programming
@@ -706,7 +729,7 @@
      (one-of? ev
               :debug :debug-condition :debug-activate :debug-return)
      (let [[thread & args] args]
-       (encode-message `(~ev ~(thread-name thread) ~@args) socket-io))
+       (encode-message `(~ev ~(thread-id thread) ~@args) socket-io))
      
      (one-of? ev
               :write-string :presentation-start :presentation-end
@@ -874,7 +897,7 @@
   ([port]
      (let [[style #^ServerSocket socket] (*listener-sockets* port)]
        (cond
-        (= style :spawn) (do (. (find-thread (str "Swank " port)) interrupt)
+        (= style :spawn) (do (. (find-thread-by-name (str "Swank " port)) interrupt)
                              (. socket close)
                              (dosync (alter *listener-sockets* dissoc port)))
         :else nil))))
@@ -917,6 +940,20 @@
      (or (and string (guess-package string))
          *ns*)) )
 
+(def *debug-quit* (new Throwable "debug quit"))
+
+(defn invoke-debugger []
+  (try
+   (loop [] (read-from-emacs) (recur))
+   (catch Throwable t
+     (when-not (= *debug-quit* t)
+       (throw t)))))
+
+;; Disable a few commands before it dooms us all
+(defn backtrace [start end] nil)
+(defn frame-catch-tags-for-emacs [n] nil)
+(defn frame-locals-for-emacs [n] nil)
+
 (defn eval-for-emacs
   "Bind *buffer-package* to buffer-package and evaluate form. Return
    the result to the id (continuation). Errors are trapped and invoke
@@ -925,28 +962,37 @@
      (try
       (binding [*buffer-package* buffer-package
                 *pending-continuations* (cons id *pending-continuations*)]
-        (let [result (eval form)]
-          (run-hook *pre-reply-hook*)
+        (if (resolve (first form))
+          (let [new-form (map #(if (= % 't) true %) form)
+                ;; new replaces the symbol/variable t with true for CL compatibility
+                result (eval new-form)]
+            (run-hook *pre-reply-hook*)
+            (send-to-emacs `(:return ~(thread-name (current-thread))
+                                     (:ok ~result)
+                                     ~id)))
           (send-to-emacs `(:return ~(thread-name (current-thread))
-                                   (:ok ~result)
+                                   (:abort)
                                    ~id))))
       (catch Throwable t
         (let [#^Throwable t t]
-          (send-to-emacs
-           `(:write-string
-             ~(with-out-str
-               (. t printStackTrace (new java.io.PrintWriter *out*))))))
-        (comment
-          (send-to-emacs `(:debug ~thread
-                                  1
-                                  (~(. t getMessage) ~(str "  [Condition of type" (class t) "]") nil)
-                                  (("ABORT" "Return to SLIME's top level."))
-                                  ((0 ~(with-out-str
-                                        (. t printStackTrace (new java.io.PrintWriter *out*)))))
-                                  ())))
+          (when (= t *debug-quit*) (throw t)) 
+          (let [level 1
+                message (list (. t getMessage) (str "  [Thrown " (class t) "]") nil)
+                options '(("ABORT" "Return to SLIME's top level."))
+                error-stack (map list
+                                 (iterate inc 0)
+                                 (map str (. t getStackTrace)))
+                continuations (list id)]
+            (send-to-emacs (list :debug (current-thread) level message options error-stack continuations))
+            (send-to-emacs (list :debug-activate (current-thread) level))
+            (invoke-debugger)
+            (send-to-emacs (list :debug-return (current-thread) level nil))))
         (send-to-emacs `(:return ~(thread-name (current-thread))
                                  (:abort)
                                  ~id))))))
+
+(defn debugger-info-for-emacs [start end]
+  (list nil nil nil *pending-continuations*))
 
 (defn connection-info []
   `(:pid ~(get-pid)
@@ -1309,5 +1355,9 @@
 (defn buffer-first-change [& ignore] nil)
 
 ;;;; Not really a debugger
-(defn throw-to-top-level []
-  "Restarted!")
+(defn throw-to-toplevel []
+  (throw *debug-quit*))
+
+(defn invoke-nth-restart-for-emacs [level n]
+  (throw *debug-quit*))
+
