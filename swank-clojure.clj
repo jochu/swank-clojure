@@ -1109,7 +1109,7 @@
   (try
    (let [f (from-string name)]
      (cond
-      (keyword? f) "[hsh]"
+      (keyword? f) "[map]"
       (symbol? f) (let [var (ns-resolve (maybe-ns package) f)]
                     (if-let args (and var (:arglists (meta var)))
                       (pr-str args)
