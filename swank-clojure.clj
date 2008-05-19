@@ -713,7 +713,11 @@
 (defn interrupt-worker-thread [id]
   (let [#^Thread thread (or (find-worker-thread id)
                             (repl-thread *emacs-connection*))]
-    (. thread interrupt)))
+    (if (. thread isInterrupted)
+      (. thread stop) ;; This is unsafe -- even deprecated; but if you really want it dead...
+      (do
+        (send-to-emacs '(:background-message "Abort again if thread does not stop. May be unsafe if IO locks exist."))
+        (. thread interrupt)))))
 
 (defn dispatch-event [event socket-io]
   (log-event "DISPATCHING: " (pr-str event) "\n")
@@ -973,19 +977,25 @@
    our non-existent debugger. "
   ([form buffer-package id]
      (try
-      (binding [*buffer-package* buffer-package
-                *pending-continuations* (cons id *pending-continuations*)]
-        (if (resolve (first form))
-          (let [new-form (map #(if (= % 't) true %) form)
-                ;; new replaces the symbol/variable t with true for CL compatibility
-                result (eval new-form)]
-            (run-hook *pre-reply-hook*)
-            (send-to-emacs `(:return ~(thread-name (current-thread))
-                                     (:ok ~result)
-                                     ~id)))
-          (send-to-emacs `(:return ~(thread-name (current-thread))
-                                   (:abort)
-                                   ~id))))
+      (try
+       (binding [*buffer-package* buffer-package
+                 *pending-continuations* (cons id *pending-continuations*)]
+         (if (resolve (first form))
+           (let [new-form (map #(if (= % 't) true %) form)
+                 ;; new replaces the symbol/variable t with true for CL compatibility
+                 result (eval new-form)]
+             (run-hook *pre-reply-hook*)
+             (send-to-emacs `(:return ~(thread-name (current-thread))
+                                      (:ok ~result)
+                                      ~id)))
+           (send-to-emacs `(:return ~(thread-name (current-thread))
+                                    (:abort)
+                                    ~id))))
+       (catch java.lang.ThreadDeath td
+         ;; A bit of a hack, catch the thread death and let the
+         ;; interrupt float up when sleep blocking. May be able to do
+         ;; something better than stop/ThreadDeath w/ jdwp
+         (. Thread sleep 10)))
       (catch Throwable t
         (let [#^Throwable t t]
           (when (= t *debug-quit*)
