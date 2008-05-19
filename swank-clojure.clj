@@ -108,6 +108,18 @@
            i
            (recur (rest coll) (inc i))))))
   {:tag Integer})
+
+(defmacro if-let*
+  ([bindings then]
+     `(if-let* ~bindings ~then nil))
+  ([bindings then else]
+     (if bindings
+       `(if-let ~@(take 2 bindings)
+            (if-let* ~(drop 2 bindings) ~then ~else)
+          ~else)
+       then))
+  {:indent 1})
+
 
 ;;;; Global variables / constants / configs
 
@@ -922,7 +934,7 @@
 
 (defn maybe-ns [package]
   (cond
-   (symbol? package) (find-ns package)
+   (symbol? package) (or (find-ns package) (maybe-ns 'clojure))
    (string? package) (maybe-ns (symbol package))
    (keyword? package) (maybe-ns (name package))
    (instance? clojure.lang.Namespace package) package

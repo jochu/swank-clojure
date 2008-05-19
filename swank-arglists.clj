@@ -13,8 +13,11 @@
 
 (defn variable-desc-for-echo-area [variable-name]
   (with-buffer-syntax
-   (let [sym (resolve (symbol variable-name))]
-     (when (. sym isBound)
-       (str variable-name " => " (var-get sym))))))
+   (or
+    (when-let sym (from-string variable-name)
+      (when-let var (resolve sym)
+        (when (. var isBound)
+          (str variable-name " => " (var-get var)))))
+    "")))
 
 (provide :swank-arglists)
