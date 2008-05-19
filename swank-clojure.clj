@@ -976,7 +976,11 @@
                                    ~id))))
       (catch Throwable t
         (let [#^Throwable t t]
-          (when (= t *debug-quit*) (throw t)) 
+          (when (= t *debug-quit*)
+            (send-to-emacs `(:return ~(thread-name (current-thread))
+                                     (:abort)
+                                     ~id))
+            (throw t)) 
           (let [level 1
                 message (list (if-let msg (. t getMessage) msg "No message.") (str "  [Thrown " (class t) "]") nil)
                 options '(("ABORT" "Return to SLIME's top level."))
