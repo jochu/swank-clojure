@@ -46,13 +46,6 @@
 ;;;  - Missing inspection, debugging, and a few other slime functions
 ;;;
 
-;; (clojure/comment
-;;   (clojure/in-ns 'clojure)
-;;   ;; This dirties the clojure namespace a little, but unfortunately we need
-;;   ;; the CL compatibility (t is thrown around by emacs to represent true)
-;;   ;; I may in the future write another ugly hack (like for the namespace issue)
-;;   (def t true))
-
 (clojure/in-ns 'swank)
 (clojure/refer 'clojure :exclude '(load-file))
 
@@ -62,10 +55,7 @@
                   OutputStream PrintStream File)
         '(clojure.lang LineNumberingPushbackReader)
         '(java.net ServerSocket Socket InetAddress)
-        '(java.util.zip ZipFile)
-        ; '(sun.jvmstat.monitor MonitoredHost)
-        ; '(com.sun.jdi VirtualMachine)
-        )
+        '(java.util.zip ZipFile))
 
 
 
@@ -108,6 +98,32 @@
            i
            (recur (rest coll) (inc i))))))
   {:tag Integer})
+
+(defn mape
+  "Maps a map, the given function will recieve a map-entity."
+  ([f hsh]
+     (mape f {} hsh))
+  ([f init hsh]
+     (with-meta
+      (reduce #(assoc %1 (key %2) (f %2)) init hsh)
+      (meta hsh))))
+
+(defn mapv
+  "Maps a map, the given function will recieve each value"
+  ([f hsh]
+     (mape (comp f val) hsh))
+  ([f init hsh]
+     (mape (comp f val) init hsh)))
+
+(defn categorize-by
+  "Categorizes elements within a coll into a map based on a keyfn."
+  ([keyfn coll]
+     (categorize-by keyfn {} coll))
+  ([keyfn init coll]
+     (reduce #(let [key (keyfn %2)
+                    val (conj (get %1 key []) %2)]
+                (assoc %1 key val))
+             init coll)))
 
 (defmacro if-let*
   ([bindings then]
@@ -278,6 +294,19 @@
 (defn find-thread [id]
   (@*thread-map* id))
 
+(defn uncaught-exception-handler
+  ([f]
+     (proxy [java.lang.Thread$UncaughtExceptionHandler] []
+       (uncaughtException [th ex]
+         (f th ex))))
+  {:tag java.lang.Thread$UncaughtExceptionHandler})
+
+;; May be redefined by swank-clojure-debug
+(defn use-uncaught-exception-handler [f]
+  (. (current-thread)
+     setUncaughtExceptionHandler
+     (uncaught-exception-handler f)))
+
 
 ;;;; Socket programming
 
@@ -335,8 +364,8 @@
   "Returns the PID of the JVM. This may or may not be accurate
    depending on the JVM in which clojure is running off of."
   ([]
-     (or (. System (getProperty "pid"))
-         (first (.. java.lang.management.ManagementFactory (getRuntimeMXBean) (getName) (split "@")))))
+     (or (first (.. java.lang.management.ManagementFactory (getRuntimeMXBean) (getName) (split "@")))
+         (. System (getProperty "pid"))))
   {:tag String})
 
 (defn user-home-path []
@@ -408,7 +437,7 @@
         (when-not @closed?
           (. stream flush)
           (recur))))
-    (str (gensym "Out stream flusher ")))
+    (str (gensym "Swank out stream flusher ")))
    stream))
 
 
@@ -537,6 +566,9 @@
   ([obj]
      ((*emacs-connection* :send) obj)))
 
+(defn send-oob-to-emacs [obj]
+  (send-to-emacs obj))
+
 (def send-oob-to-emacs #'send-to-emacs)
 
 (defn send-to-control-thread
@@ -613,6 +645,9 @@
 
 ;;;; Making connections
 
+(defn default-connection []
+  (first @*connections*))
+
 ;; prototype (defined later)
 (def accept-authenticated-connection)
 
@@ -683,7 +718,7 @@
 (defn spawn-worker-thread [connection]
   ;; something about with-bindings business
   (spawn (fn [] (with-connection connection (handle-request connection)))
-         (str (gensym "Worker thread "))))
+         (str (gensym "Swank worker thread "))))
 
 (defn spawn-repl-thread [connection name]
   (spawn (fn [] (with-connection connection (repl-loop connection)))
@@ -696,7 +731,7 @@
     (cond
      (thread-alive? thread) thread
      :else (dosync (ref-set (connection :repl-thread)
-                            (spawn-repl-thread connection "new-repl-thread"))))))
+                            (spawn-repl-thread connection "Swank REPL Thread"))))))
 
 (defn thread-for-evaluation [id]
   (cond
@@ -767,14 +802,15 @@
 
 (defn spawn-threads-for-connection [connection]
   (let [socket-io (connection :socket-io)
-        control-thread (spawn (fn [] (dispatch-loop socket-io connection)))]
+        control-thread (spawn (fn [] (dispatch-loop socket-io connection)) "Swank Control Thread")]
     (dosync
      (ref-set (connection :control-thread) control-thread))
     (let [reader-thread (spawn (fn []
                                  (let [go (mb-receive)]
                                    (assert (= go 'accept-input)))
-                                 (read-loop control-thread socket-io connection)))
-          repl-thread (spawn-repl-thread connection "repl-thread")]
+                                 (read-loop control-thread socket-io connection))
+                               "Swank Reader Thread")
+          repl-thread (spawn-repl-thread connection "Swank REPL Thread")]
       (dosync
        (ref-set (connection :repl-thread) repl-thread)
        (ref-set (connection :reader-thread) reader-thread))
@@ -966,57 +1002,64 @@
      (when-not (= *debug-quit* t)
        (throw t)))))
 
-;; Disable a few commands before it dooms us all
+;; Disable a few commands as they are not supported
+;;      (swank-clojure-debug may redefine these functions)
 (defn backtrace [start end] nil)
 (defn frame-catch-tags-for-emacs [n] nil)
 (defn frame-locals-for-emacs [n] nil)
+
+(defn spawn-debugger
+  "Creates a thread that handles debugging of given exception/thread"
+  ([connection id #^Thread th #^Throwable ex]
+     (spawn
+      (fn []
+        (binding [*emacs-connection* connection]
+          (let [ex (or (. ex getCause) ex)
+                level 1
+                message (list (if-let msg (. ex getMessage) msg "No message.") (str "  [Thrown " (class ex) "]") nil)
+                options '(("ABORT" "Return to SLIME's top level."))
+                error-stack (map list
+                                 (iterate inc 0)
+                                 (map str (. ex getStackTrace)))
+                continuations (list id)]
+            (send-to-emacs (list :debug (current-thread) level message options error-stack continuations))
+            (send-to-emacs (list :debug-activate (current-thread) level))
+            (invoke-debugger)
+            (send-to-emacs (list :debug-return (current-thread) level nil))
+            (send-to-emacs `(:return ~(thread-name th)
+                                     (:abort)
+                                     ~id)))))
+      (str "Swank Debugger for " (. th getName)))))
 
 (defn eval-for-emacs
   "Bind *buffer-package* to buffer-package and evaluate form. Return
    the result to the id (continuation). Errors are trapped and invoke
    our non-existent debugger. "
   ([form buffer-package id]
+     (use-uncaught-exception-handler
+      (let [connection *emacs-connection*]
+        (fn [th ex]
+          (spawn-debugger connection id th ex))))
      (try
-      (try
-       (binding [*buffer-package* buffer-package
-                 *pending-continuations* (cons id *pending-continuations*)]
-         (if (resolve (first form))
-           (let [new-form (map #(if (= % 't) true %) form)
-                 ;; new replaces the symbol/variable t with true for CL compatibility
-                 result (eval new-form)]
-             (run-hook *pre-reply-hook*)
-             (send-to-emacs `(:return ~(thread-name (current-thread))
-                                      (:ok ~result)
-                                      ~id)))
-           (send-to-emacs `(:return ~(thread-name (current-thread))
-                                    (:abort)
-                                    ~id))))
-       (catch java.lang.ThreadDeath td
-         ;; A bit of a hack, catch the thread death and let the
-         ;; interrupt float up when sleep blocking. May be able to do
-         ;; something better than stop/ThreadDeath w/ jdwp
-         (. Thread sleep 10)))
-      (catch Throwable t
-        (let [#^Throwable t t]
-          (when (= t *debug-quit*)
+      (binding [*buffer-package* buffer-package
+                *pending-continuations* (cons id *pending-continuations*)]
+        (if (resolve (first form))
+          (let [new-form (map #(if (= % 't) true %) form)
+                ;; new replaces the symbol/variable t with true for CL compatibility
+                result (eval new-form)]
+            (run-hook *pre-reply-hook*)
             (send-to-emacs `(:return ~(thread-name (current-thread))
-                                     (:abort)
-                                     ~id))
-            (throw t)) 
-          (let [level 1
-                message (list (if-let msg (. t getMessage) msg "No message.") (str "  [Thrown " (class t) "]") nil)
-                options '(("ABORT" "Return to SLIME's top level."))
-                error-stack (map list
-                                 (iterate inc 0)
-                                 (map str (. t getStackTrace)))
-                continuations (list id)]
-            (send-to-emacs (list :debug (current-thread) level message options error-stack continuations))
-            (send-to-emacs (list :debug-activate (current-thread) level))
-            (invoke-debugger)
-            (send-to-emacs (list :debug-return (current-thread) level nil))))
-        (send-to-emacs `(:return ~(thread-name (current-thread))
-                                 (:abort)
-                                 ~id))))))
+                                     (:ok ~result)
+                                     ~id)))
+          (send-to-emacs `(:return ~(thread-name (current-thread))
+                                   (:abort)
+                                   ~id))))
+      (catch Throwable t
+        (when (= t *debug-quit*)
+          (send-to-emacs `(:return ~(thread-name (current-thread))
+                                   (:abort)
+                                   ~id)))
+        (throw t)))))
 
 (defn debugger-info-for-emacs [start end]
   (list nil nil nil *pending-continuations*))
@@ -1388,3 +1431,291 @@
 (defn invoke-nth-restart-for-emacs [level n]
   (throw *debug-quit*))
 
+
+
+;;;; Inspection (basic clojure aware inspection)
+
+;; This a mess, I'll clean up this code after I figure out exactly
+;; what I need for debugging support.
+
+(def *inspectee* (ref nil))
+(def *inspectee-content* (ref nil))
+(def *inspectee-parts* (ref nil))
+(def *inspectee-actions* (ref nil))
+(def *inspector-stack* (ref nil))
+(def *inspector-history* (ref nil))
+
+(defn reset-inspector []
+  (dosync
+   (ref-set *inspectee* nil)
+   (ref-set *inspectee-content* nil)
+   (ref-set *inspectee-parts* [])
+   (ref-set *inspectee-actions* [])
+   (ref-set *inspector-stack* '())
+   (ref-set *inspector-history* [])))
+
+(defn inspectee-title [obj]
+  (cond
+   (instance? clojure.lang.LazySeq obj) (str "clojure.lang.LazySeq@...")
+   :else (str obj)))
+
+(defn print-part-to-string [value]
+  (let [s (inspectee-title value)
+        pos (position value @*inspector-history*)]
+    (if pos
+      (str "#" pos "=" s)
+      s)))
+
+(defn assign-index [o dest]
+  (dosync
+   (let [index (count @dest)]
+     (alter dest conj o)
+     index)))
+
+(defn value-part [obj s]
+  (list :value (or s (print-part-to-string obj))
+        (assign-index obj *inspectee-parts*)))
+
+(defn action-part [label lambda refresh?]
+  (list :action label
+        (assign-index (list lambda refresh?)
+                      *inspectee-actions*)))
+
+(defn label-value-line
+  ([label value] (label-value-line label value true))
+  ([label value newline?]
+     (list* (str label) ": " (list :value value)
+            (if newline? '((:newline)) nil))))
+
+(defmacro label-value-line* [& label-values]
+  `(concat ~@(map (fn [[label value]]
+                    `(label-value-line ~label ~value))
+                  label-values)))
+
+;; Inspection
+
+;; This is the simple version that only knows about clojure stuff.
+;; Many of these will probably be redefined by swank-clojure-debug
+(defmulti emacs-inspect
+  (fn known-types [obj]
+    (cond
+     (map? obj) :map
+     (vector? obj) :vector
+     (var? obj) :var
+     (string? obj) :string
+     (seq? obj) :seq
+     (instance? Class obj) :class
+     (instance? clojure.lang.Namespace obj) :namespace)))
+
+(defn inspect-meta-information [obj]
+  (when (> (count (meta obj)) 0)
+    (concat
+     '("Meta Information: " (:newline))
+     (mapcat (fn [[key val]]
+               `("  " (:value ~key) " = " (:value ~val) (:newline)))
+             (meta obj)))))
+
+(defmethod emacs-inspect :map [obj]
+  (concat
+   (label-value-line*
+    ("Class" (class obj))
+    ("Count" (count obj)))
+   '("Contents: " (:newline))
+   (inspect-meta-information obj)
+   (mapcat (fn [[key val]]
+             `("  " (:value ~key) " = " (:value ~val)
+               (:newline)))
+           obj)))
+
+(defmethod emacs-inspect :vector [obj]
+  (concat
+   (label-value-line*
+    ("Class" (class obj))
+    ("Count" (count obj)))
+   '("Contents: " (:newline))
+   (inspect-meta-information obj)
+   (mapcat (fn [i val]
+             `(~(str "  " i ". ") (:value ~val) (:newline)))
+           (iterate inc 0)
+           obj)))
+
+(defmethod emacs-inspect :var [#^clojure.lang.Var obj]
+  (concat
+   (label-value-line*
+    ("Class" (class obj)))
+   (inspect-meta-information obj)
+   (when (. obj isBound)
+     `("Value: " (:value ~(var-get obj))))))
+
+(defmethod emacs-inspect :string [obj]
+  (concat
+   (label-value-line*
+    ("Class" (class obj)))
+   (inspect-meta-information obj)
+   (list (str "Value: " (pr-str obj)))))
+
+(defmethod emacs-inspect :seq [obj]
+  (concat
+   (label-value-line*
+    ("Class" (class obj)))
+   '("Contents: " (:newline))
+   (inspect-meta-information obj)
+   (mapcat (fn [i val]
+             `(~(str "   " i ". ") (:value ~val) (:newline)))
+           (iterate inc 0)
+           obj)))
+
+(defmethod emacs-inspect :default [obj]
+  `("Type: " (:value ~(class obj)) (:newline)
+    "Value: " (:value ~(str obj)) (:newline)
+    "Don't know how to inspect the object" (:newline)))
+
+(defmethod emacs-inspect :class [#^Class obj]
+  (let [meths (. obj getMethods)
+        fields (. obj getFields)]
+    (concat
+     `("Type: " (:value ~(class obj)) (:newline)
+       "---" (:newline)
+       "Fields: " (:newline))
+     (mapcat (fn [f]
+               `("  " (:value ~f) (:newline))) fields)
+     '("---" (:newline)
+       "Methods: " (:newline))
+     (mapcat (fn [m]
+               `("  " (:value ~m) (:newline))) meths))))
+
+
+(defn ns-refers-by-ns [#^clojure.lang.Namespace ns]
+  (categorize-by (fn [#^clojure.lang.Var v] (. v ns))
+                 (map val (ns-refers ns))))
+
+(defmethod emacs-inspect :namespace [#^clojure.lang.Namespace obj]
+  (concat
+   (label-value-line*
+    ("Class" (class obj))
+    ("Count" (count (ns-map obj))))
+   '("---" (:newline)
+     "Refer from: " (:newline))
+   (mapcat (fn [[ns refers]]
+             `("  "(:value ~ns) " = " (:value ~refers) (:newline)))
+           (ns-refers-by-ns obj))
+   (label-value-line*
+    ("Imports" (ns-imports obj))
+    ("Interns" (ns-interns obj)))))
+
+(defn inspector-content [specs]
+  (flet [(fn spec-seq [seq]
+           (let [[f & args] seq]
+             (cond
+              (= f :newline) (str \newline)
+
+              (= f :value)
+              (let [[obj & [str]] args]
+                (value-part obj str))
+
+              (= f :action)
+              (let [[label lambda & options] args
+                    {:keys [refresh?]} (apply hash-map options)]
+                (action-part label lambda refresh?)))))
+         (fn spec-value [val]
+           (cond
+            (string? val) val
+            (seq? val) (spec-seq val)))]
+    (map spec-value specs)))
+
+;; Works for infinite sequences, but it lies about length. Luckily, emacs doesn't
+;; care.
+(defn content-range [lst start end]
+    (let [amount-wanted (- end start)
+          shifted (drop start lst)
+          taken (take amount-wanted shifted)
+          amount-taken (count taken)]
+      (if (< amount-taken amount-wanted)
+        (list taken (+ amount-taken start) start end)
+        ;; There's always more until we know there isn't
+        (list taken (+ end 500) start end))))
+
+(defn inspect-object [o]
+  (dosync
+   (ref-set *inspectee* o)
+   (alter *inspector-stack* conj o)
+   (when-not (filter #(identical? o %) @*inspector-history*)
+     (alter *inspector-history* conj o))
+   (ref-set *inspectee-content* (inspector-content (emacs-inspect o)))
+   (list :title (inspectee-title o)
+         :id (assign-index o *inspectee-parts*)
+         :content (content-range @*inspectee-content* 0 500))))
+
+(defn init-inspector [string]
+  (with-buffer-syntax
+   (reset-inspector)
+   (inspect-object (eval (read-from-string string)))))
+
+(defn inspect-in-emacs [what]
+  (flet [(fn send-it []
+           (with-buffer-syntax
+            (reset-inspector)
+            (send-oob-to-emacs `(:inspect ~(inspect-object what)))))]
+    (cond
+     *emacs-connection* (send-it)
+     (default-connection) (with-connection (default-connection)
+                            (send-it)))))
+
+(defn inspector-nth-part [index]
+  (get @*inspectee-parts* index))
+
+(defn inspect-nth-part [index]
+  (with-buffer-syntax
+   (inspect-object (inspector-nth-part index))))
+
+(defn inspector-range [from to]
+  (content-range @*inspectee-content* from to))
+
+(defn ref-pop [ref]
+  (let [[f & r] @ref]
+    (ref-set ref r)
+    f))
+
+(defn inspector-call-nth-action [index & args]
+  (let [[fn refresh?] (get @*inspectee-actions* index)]
+    (apply fn args)
+    (if refresh?
+      (inspect-object (dosync (ref-pop *inspector-stack*)))
+      nil)))
+
+(defn inspector-pop []
+  (with-buffer-syntax
+   (cond
+    (rest @*inspector-stack*)
+    (inspect-object
+     (dosync
+      (ref-pop *inspector-stack*)
+      (ref-pop *inspector-stack*)))
+    :else nil)))
+
+(defn inspector-next []
+  (with-buffer-syntax
+   (let [pos (position @*inspectee* @*inspector-history*)]
+     (cond
+      (= (inc pos) (count @*inspector-history*)) nil
+      :else (inspect-object (get @*inspector-history* (inc pos)))))))
+
+(defn inspector-reinspect []
+  (inspect-object @*inspectee*))
+
+(defn quit-inspector []
+  (reset-inspector)
+  nil)
+
+(defn describe-inspectee []
+  (with-buffer-syntax
+   (str @*inspectee*)))
+
+(defn class-exists? [#^String name]
+  (try
+   (. java.lang.Class forName name)
+   (catch Throwable t nil)))
+
+(comment ;; not quite ready yet
+ (when (class-exists? "com.sun.jdi.VirtualMachine")
+   (swank-require :swank-clojure-debug)))
