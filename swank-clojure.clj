@@ -46,6 +46,11 @@
 ;;;  - Missing inspection, debugging, and a few other slime functions
 ;;;
 
+;; Load up genclass 
+;; (clojure/in-ns 'clojure)
+;; (binding [*warn-on-reflection* nil] ;; suppress the warnings!
+;;   (. clojure.lang.RT loadResourceScript "genclass.clj"))
+
 (clojure/in-ns 'swank)
 (clojure/refer 'clojure :exclude '(load-file))
 
@@ -135,6 +140,8 @@
           ~else)
        then))
   {:indent 1})
+
+
 
 
 ;;;; Global variables / constants / configs
@@ -993,6 +1000,17 @@
      (or (and string (guess-package string))
          *ns*)) )
 
+(comment
+ (gen-and-load-class 'swank.DebugQuitException :extends Exception)
+ (def *debug-quit* (new swank.DebugQuitException "debug quit"))
+
+
+ (defn invoke-debugger []
+   (try
+    (loop [] (read-from-emacs) (recur))
+    (catch swank.DebugQuitException dqe
+      nil))))
+
 (def *debug-quit* (new Throwable "debug quit"))
 
 (defn invoke-debugger []
@@ -1008,15 +1026,22 @@
 (defn frame-catch-tags-for-emacs [n] nil)
 (defn frame-locals-for-emacs [n] nil)
 
+(defn root-cause
+  ([#^Throwable ex]
+     (if-let cause (. ex getCause)
+       (recur cause)
+       ex))
+  {:tag Throwable})
+
 (defn spawn-debugger
   "Creates a thread that handles debugging of given exception/thread"
   ([connection id #^Thread th #^Throwable ex]
      (spawn
       (fn []
         (binding [*emacs-connection* connection]
-          (let [ex (or (. ex getCause) ex)
+          (let [ex (root-cause ex) ;; (or (. ex getCause) ex)
                 level 1
-                message (list (if-let msg (. ex getMessage) msg "No message.") (str "  [Thrown " (class ex) "]") nil)
+                message (list (or (. ex getMessage) "No message.") (str "  [Thrown " (class ex) "]") nil)
                 options '(("ABORT" "Return to SLIME's top level."))
                 error-stack (map list
                                  (iterate inc 0)
@@ -1025,10 +1050,7 @@
             (send-to-emacs (list :debug (current-thread) level message options error-stack continuations))
             (send-to-emacs (list :debug-activate (current-thread) level))
             (invoke-debugger)
-            (send-to-emacs (list :debug-return (current-thread) level nil))
-            (send-to-emacs `(:return ~(thread-name th)
-                                     (:abort)
-                                     ~id)))))
+            (send-to-emacs (list :debug-return (current-thread) level nil)))))
       (str "Swank Debugger for " (. th getName)))))
 
 (defn eval-for-emacs
@@ -1044,22 +1066,22 @@
       (binding [*buffer-package* buffer-package
                 *pending-continuations* (cons id *pending-continuations*)]
         (if (resolve (first form))
-          (let [new-form (map #(if (= % 't) true %) form)
-                ;; new replaces the symbol/variable t with true for CL compatibility
-                result (eval new-form)]
-            (run-hook *pre-reply-hook*)
-            (send-to-emacs `(:return ~(thread-name (current-thread))
-                                     (:ok ~result)
-                                     ~id)))
+          (try
+           (let [new-form (map #(if (= % 't) true %) form)
+                 ;; new replaces the symbol/variable t with true for CL compatibility
+                 result (eval new-form)]
+             (run-hook *pre-reply-hook*)
+             (send-to-emacs `(:return ~(thread-name (current-thread))
+                                      (:ok ~result)
+                                      ~id)))
+           (catch Throwable t
+             (send-to-emacs `(:return ~(thread-name (current-thread))
+                                      (:abort)
+                                      ~id))
+             (throw t)))
           (send-to-emacs `(:return ~(thread-name (current-thread))
                                    (:abort)
-                                   ~id))))
-      (catch Throwable t
-        (when (= t *debug-quit*)
-          (send-to-emacs `(:return ~(thread-name (current-thread))
-                                   (:abort)
-                                   ~id)))
-        (throw t)))))
+                                   ~id)))))))
 
 (defn debugger-info-for-emacs [start end]
   (list nil nil nil *pending-continuations*))
@@ -1219,7 +1241,7 @@
 (defn simple-completions [string package]
   (try
    (let [[sym-ns sym-name] (symbol-name-parts string)
-         ns (maybe-ns (or sym-ns package))
+         ns (if sym-ns (find-ns (symbol sym-ns)) (maybe-ns package))
          vars (vals (if sym-ns (ns-publics ns) (ns-map ns)))
          matches (sort (vars-start-with sym-name vars))]
      (if sym-ns
@@ -1232,7 +1254,6 @@
                (reduce common-prefix matches)
                string))))
    (catch java.lang.Throwable t
-     (send-to-emacs `(:write-string "fail"))
      (list nil string))))
 
 ;;;; Macroexpansion
@@ -1711,11 +1732,11 @@
   (with-buffer-syntax
    (str @*inspectee*)))
 
-(defn class-exists? [#^String name]
-  (try
-   (. java.lang.Class forName name)
-   (catch Throwable t nil)))
-
-(comment ;; not quite ready yet
- (when (class-exists? "com.sun.jdi.VirtualMachine")
-   (swank-require :swank-clojure-debug)))
+(comment
+  (defn class-exists? [#^String name]
+    (try
+     (. java.lang.Class forName name)
+     (catch Throwable t nil)))
+  
+  (when (class-exists? "com.sun.jdi.VirtualMachine")
+    (swank-require :swank-clojure-debug)))

@@ -6,10 +6,11 @@
                 print-right-margin
                 print-lines]} (apply hash-map options)]
     ;; Yeah, I'm lazy -- I'll flesh this out later
-    (if (and (seq? raw-specs)
-          (seq? (first raw-specs)))
+    (if (and raw-specs
+             (seq? raw-specs)
+             (seq? (first raw-specs)))
       (operator-arglist (ffirst raw-specs) *buffer-package*)
-      "")))
+      nil)))
 
 (defn variable-desc-for-echo-area [variable-name]
   (with-buffer-syntax
