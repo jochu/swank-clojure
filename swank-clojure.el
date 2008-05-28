@@ -26,7 +26,8 @@
 (defun clojure-init (file encoding)
   (format "%S\n\n%S\n\n%S\n\n"
           `(load-file ,(file-truename (format "%s/swank-clojure.clj" clojure-swank-path)))
-          `(swank/ignore-protocol-version ,slime-protocol-version)
+          (when (boundp 'slime-protocol-version)
+            `(swank/ignore-protocol-version ,slime-protocol-version))
           `(swank/start-server ,file)))
 
 (defun find-clojure-package ()
