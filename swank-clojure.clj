@@ -201,7 +201,7 @@
 (def-once *read-input-catch-tag-intern* (ref {}))
 
 ;; The state stack, whatever that is
-(def *swank-state-stack* '())
+(def *swank-state-stack* nil)
 
 ;; The package in which all swank io is read with
 (def *swank-io-package* (create-ns 'swank-io-package))
@@ -1472,7 +1472,7 @@
    (ref-set *inspectee-content* nil)
    (ref-set *inspectee-parts* [])
    (ref-set *inspectee-actions* [])
-   (ref-set *inspector-stack* '())
+   (ref-set *inspector-stack* nil)
    (ref-set *inspector-history* [])))
 
 (defn inspectee-title [obj]
