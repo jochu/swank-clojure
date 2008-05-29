@@ -981,11 +981,11 @@
 
 (defn maybe-ns [package]
   (cond
-   (symbol? package) (or (find-ns package) (maybe-ns 'clojure))
+   (symbol? package) (or (find-ns package) (maybe-ns 'user))
    (string? package) (maybe-ns (symbol package))
    (keyword? package) (maybe-ns (name package))
    (instance? clojure.lang.Namespace package) package
-   :else (maybe-ns 'clojure)))
+   :else (maybe-ns 'user)))
 
 (defn guess-package
   "Guess which package corresponds to string. Return nil if no
