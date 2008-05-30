@@ -171,7 +171,7 @@
 (def *dont-close* nil)
 
 ;; The default coding system
-(def *coding-system* "iso-latin-1-unix")
+(def *coding-system* "iso-8859-1")
 
 ;; A map of all listener sockets, with ports as the key
 (def-once *listener-sockets* (ref {}))
@@ -466,7 +466,7 @@
            length (count string)]
        (doto (maybe-out-stream stream)
          (write (. (num->hex length 6) getBytes))
-         (write (. string getBytes))
+         (write (. string getBytes *coding-system*))
          (flush)))))
 
 (defn read-form [string]
