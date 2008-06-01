@@ -1090,8 +1090,8 @@
   `(:pid ~(get-pid)
     :style ~(*emacs-connection* :communication-style)
     :lisp-implementation (:type "clojure")
-    :package (:name ~(ns-name *ns*)
-              :prompt ~(ns-name *ns*))
+    :package (:name ~(str (ns-name *ns*))
+              :prompt ~(str (ns-name *ns*)))
     :version ~(deref *protocol-version*)))
 
 (defn quit-lisp []
@@ -1162,7 +1162,7 @@
      (f)
      (finally
       (when-not (= last-ns *ns*)
-        (send-to-emacs `(:new-package ~(ns-name *ns*) ~(ns-name *ns*))))))))
+        (send-to-emacs `(:new-package ~(str (ns-name *ns*)) ~(str (ns-name *ns*)))))))))
 
 (defn send-repl-results-to-emacs [val]
   (send-to-emacs `(:write-string ~(str (pr-str val) "\n") :repl-result)))
@@ -1280,8 +1280,8 @@
 (defn set-package [name]
   (let [ns (maybe-ns name)]
     (in-ns (ns-name ns))
-    (list (ns-name ns)
-          (ns-name ns))))
+    (list (str (ns-name ns))
+          (str (ns-name ns)))))
 
 ;;;; Describe
 (defn describe-to-string [var]
