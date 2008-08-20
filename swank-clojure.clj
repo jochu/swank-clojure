@@ -77,10 +77,12 @@
            defs (apply vector (mapcat list (map fn-name fns) fns))]
        `(let ~defs ~@body))))
 
-(defmacro one-of? [val & possible]
-  (let [v (gensym)]
-    `(let [~v ~val]
-       (or ~@(map (fn [p] `(= ~v ~p)) possible)))))
+(defmacro one-of?
+  "Short circuiting value comparison."
+  ([val & possible]
+     (let [v (gensym)]
+       `(let [~v ~val]
+          (or ~@(map (fn [p] `(= ~v ~p)) possible))))))
 
 (defmacro def-once [var val]
   `(let [v# (def ~var)]
@@ -220,14 +222,7 @@
 
 (defn spawn
   ([#^Runnable f]
-     (let [calling-ns *ns*
-           calling-out *out*]
-       (doto (new Thread
-                  (fn []
-                    (binding [*ns* calling-ns
-                              *out* calling-out]
-                      (f))))
-         (start))))
+     (spawn f (str (gensym "Swank-Thread"))))
   ([#^Runnable f #^String name]
      (let [calling-ns *ns*
            calling-out *out*]
@@ -1039,7 +1034,7 @@
      (spawn
       (fn []
         (binding [*emacs-connection* connection]
-          (let [ex (root-cause ex) ;; (or (. ex getCause) ex)
+          (let [ex (or (.getCause ex) ex); (root-cause ex) ;; (or (. ex getCause) ex)
                 level 1
                 message (list (or (. ex getMessage) "No message.") (str "  [Thrown " (class ex) "]") nil)
                 options '(("ABORT" "Return to SLIME's top level."))
@@ -1378,7 +1373,7 @@
                      amp)))))
          (fn indent-cons [meta]
            (when-let indent-to (indent-loc meta)
-             (when (> indent-to 0)
+             (when (>= indent-to 0)
                `(~(str (:name meta)) . ~indent-to))))]
     (indent-cons (meta var))))
 
