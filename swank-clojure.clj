@@ -1186,10 +1186,8 @@
     (with-buffer-syntax
      (let [start (. System (nanoTime))
            ret (load-file file-name)]
-       (list :swank-compilation-unit
-             nil
-             '(t)
-             (list (/ (- (. System (nanoTime)) start) 1000000000.0)))))))
+       (list (pr-str ret)
+             (str (/ (- (. System (nanoTime)) start) 1000000.0) " m"))))))
 
 
 ;;;; Simple arglist display
