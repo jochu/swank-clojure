@@ -1043,7 +1043,7 @@
                                  (map str (. ex getStackTrace)))
                 continuations (list id)]
             (send-to-emacs (list :debug (current-thread) level message options error-stack continuations))
-            (send-to-emacs (list :debug-activate (current-thread) level))
+            (send-to-emacs (list :debug-activate (current-thread) level true))
             (invoke-debugger)
             (send-to-emacs (list :debug-return (current-thread) level nil)))))
       (str "Swank Debugger for " (. th getName)))))
