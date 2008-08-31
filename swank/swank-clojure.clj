@@ -51,19 +51,17 @@
 ;; (binding [*warn-on-reflection* nil] ;; suppress the warnings!
 ;;   (. clojure.lang.RT loadResourceScript "genclass.clj"))
 
-(clojure/in-ns 'swank)
+(create-ns 'swank)
+(ns swank
+    (:import (java.io InputStreamReader PushbackReader StringReader Reader
+                       BufferedReader FileReader
+                       OutputStreamWriter FileWriter Writer StringWriter
+                       OutputStream PrintStream File)
+             (clojure.lang LineNumberingPushbackReader)
+             (java.net ServerSocket Socket InetAddress)
+             (java.util.zip ZipFile)))
 (clojure/refer 'clojure :exclude '(load-file))
 
-(import '(java.io InputStreamReader PushbackReader StringReader Reader
-                  BufferedReader FileReader
-                  OutputStreamWriter FileWriter Writer StringWriter
-                  OutputStream PrintStream File)
-        '(clojure.lang LineNumberingPushbackReader)
-        '(java.net ServerSocket Socket InetAddress)
-        '(java.util.zip ZipFile))
-
-
-
 ;;;; General coding utils
 
 ; (put 'flet 'clojure-indent-function 1)
@@ -83,11 +81,6 @@
      (let [v (gensym)]
        `(let [~v ~val]
           (or ~@(map (fn [p] `(= ~v ~p)) possible))))))
-
-(defmacro def-once [var val]
-  `(let [v# (def ~var)]
-     (when-not (. v# isBound)
-       (. v# bindRoot ~val))))
 
 (defn ffilter
   "Returns the first entry that's true for fn"
@@ -176,7 +169,7 @@
 (def *coding-system* "iso-8859-1")
 
 ;; A map of all listener sockets, with ports as the key
-(def-once *listener-sockets* (ref {}))
+(defonce *listener-sockets* (ref {}))
 
 ;; Whether to log or not
 (def *log-events* false)
@@ -188,7 +181,7 @@
 (def *loopback-interface* "127.0.0.1")
 
 ;; A list of all connections for this swank server
-(def-once *connections* (ref nil))
+(defonce *connections* (ref nil))
 
 ;; The current emacs connection
 (def *emacs-connection* nil)
@@ -197,10 +190,10 @@
 (def *namespace-re* (re-pattern "(^\\(:emacs-rex \\([a-zA-Z][a-zA-Z0-9]+):"))
 
 ;; The running unique ids of input requests
-(def-once *read-input-catch-tag* (ref 0))
+(defonce *read-input-catch-tag* (ref 0))
 
 ;; A map of catch-tag ids and exceptions
-(def-once *read-input-catch-tag-intern* (ref {}))
+(defonce *read-input-catch-tag-intern* (ref {}))
 
 ;; The state stack, whatever that is
 (def *swank-state-stack* nil)
@@ -1092,32 +1085,6 @@
 (defn quit-lisp []
   (. System exit 0))
 
-
-
-;;;; Require / provide
-
-;; the path of this file (only set on load time), which should be okay.
-(def-once clj-source (var-get (. clojure.lang.Compiler SOURCE_PATH)))
-(def-once clj-dir (str (. (new File (str swank/clj-source)) getParentFile)))
-
-(def *modules* (ref nil))
-
-(defn provide [module]
-  (dosync
-   (alter *modules* conj module)))
-
-(defn swank-require
-  "Yeah, we don't have modules. Sorry."
-  ([modules]
-     (swank-require modules clj-dir))
-  ([modules pathname]
-     (doseq module (if (seq? modules) modules (list modules))
-       (when-not (ffilter #(= % module) @*modules*)
-         (let [file (str pathname (. java.io.File separator) (name module) ".clj")]
-           (when (. (new java.io.File file) exists)
-             (clojure/load-file file)))))
-     @*modules*))
-
 ;;;; Evaluation
 
 (defmacro with-buffer-syntax [& body]
@@ -1737,3 +1704,5 @@
   
   (when (class-exists? "com.sun.jdi.VirtualMachine")
     (swank-require :swank-clojure-debug)))
+
+(load-resources "swank-c-p-c.clj" "swank-arglists.clj")

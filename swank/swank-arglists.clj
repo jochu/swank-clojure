@@ -1,5 +1,4 @@
-(clojure/in-ns 'swank)
-(swank-require :swank-c-p-c)
+(ns swank)
 
 (defn arglist-for-echo-area [raw-specs & options]
   (let [{:keys [arg-indices
@@ -20,5 +19,3 @@
         (when (. var isBound)
           (str variable-name " => " (var-get var)))))
     "")))
-
-(provide :swank-arglists)
