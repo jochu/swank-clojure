@@ -23,13 +23,6 @@
              '(clojure ("clojure") :init clojure-init)
              t)
 
-(defun clojure-init (file encoding)
-  (format "%S\n\n%S\n\n%S\n\n"
-          `(load-file ,(file-truename (format "%s/swank-clojure.clj" clojure-swank-path)))
-          (when (boundp 'slime-protocol-version)
-            `(swank/ignore-protocol-version ,slime-protocol-version))
-          `(swank/start-server ,file)))
-
 (defun find-clojure-package ()
   (let ((regexp (concat "^(\\(clojure/\\)?in-ns\\>[ \t']*"
                         "\\([^)]+\\)[ \t]*)")))

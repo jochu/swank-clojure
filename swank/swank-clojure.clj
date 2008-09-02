@@ -4,16 +4,7 @@
 ;; (binding [*warn-on-reflection* nil] ;; suppress the warnings!
 ;;   (. clojure.lang.RT loadResourceScript "genclass.clj"))
 
-(create-ns 'swank)
-(ns swank
-    (:import (java.io InputStreamReader PushbackReader StringReader Reader
-                       BufferedReader FileReader
-                       OutputStreamWriter FileWriter Writer StringWriter
-                       OutputStream PrintStream File)
-             (clojure.lang LineNumberingPushbackReader)
-             (java.net ServerSocket Socket InetAddress)
-             (java.util.zip ZipFile)))
-(clojure/refer 'clojure :exclude '(load-file))
+(ns swank)
 
 ;;;; General coding utils
 
@@ -1657,5 +1648,3 @@
   
   (when (class-exists? "com.sun.jdi.VirtualMachine")
     (swank-require :swank-clojure-debug)))
-
-(load-resources "swank-c-p-c.clj" "swank-arglists.clj")
