@@ -19,6 +19,13 @@
     "Directory containing the swank-clojure package. This is used
      to load the supporting clojure library swank."))
 
+(defun clojure-init (file encoding)
+  (format "%S\n\n%S\n\n%S\n\n"
+          `(clojure/require 'swank)
+          (when (boundp 'slime-protocol-version)
+            `(swank/ignore-protocol-version ,slime-protocol-version))
+          `(swank/start-server ,file)))
+
 (add-to-list 'slime-lisp-implementations
              '(clojure ("clojure") :init clojure-init)
              t)
