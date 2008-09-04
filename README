@@ -13,7 +13,7 @@ Installation
        (require 'swank-clojure-autoload)
 
   3. Customize the path to your clojure jar file. Optionally, also
-     customize other classpath information.
+     customize other classpath information. [3]
 
        (setq swank-clojure-jar-path "/path/to/clojure.jar")
 
@@ -38,3 +38,5 @@ Installation
 
 [1] Clojure SVN: http://sourceforge.net/svn/?group_id=137961
 [2] Slime CVS: http://common-lisp.net/project/slime/#downloading
+[3] If you want to configure swank-clojure to use a custom binary or
+    sh-script, you may configure swank-clojure-binary instead.

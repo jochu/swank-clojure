@@ -39,6 +39,12 @@ within ~/.clojure/"
   :type 'list
   :group 'swank-clojure)
 
+(defcustom swank-clojure-binary nil
+  "Used as a binary executable (instead of
+swank-clojure-java-path) if non-nil."
+  :type 'string
+  :group 'swank-clojure)
+
 
 
 
@@ -65,16 +71,20 @@ within ~/.clojure/"
 
 (defun swank-clojure-cmd ()
   "Create the command to start clojure based off of current configuration settings"
-  (when (not swank-clojure-jar-path)
-    (error "Error: You must specify a swank-clojure-jar-path. Please see README of swank-clojure."))
-  (list swank-clojure-java-path
-        "-cp"
-        (mapconcat 'identity
-                   (append (list swank-clojure-jar-path
-                                 swank-clojure-path)
-                           swank-clojure-extra-classpaths)
-                   path-separator)
-        "clojure.lang.Repl"))
+  (if swank-clojure-binary
+      (if (listp swank-clojure-binary)
+          swank-clojure-binary
+        (list swank-clojure-binary))
+    (if (not swank-clojure-jar-path)
+        (error "Error: You must specify a swank-clojure-jar-path. Please see README of swank-clojure.")
+      (list swank-clojure-java-path
+            "-cp"
+            (mapconcat 'identity
+                       (append (list swank-clojure-jar-path
+                                     swank-clojure-path)
+                               swank-clojure-extra-classpaths)
+                       path-separator)
+            "clojure.lang.Repl"))))
 
 ;; Change the repl to be more clojure friendly
 (defun swank-clojure-slime-repl-modify-syntax ()
