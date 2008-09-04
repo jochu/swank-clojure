@@ -50,11 +50,11 @@ within ~/.clojure/"
           `(swank/start-server ,file)))
 
 (defun swank-clojure-find-package ()
-  (let ((regexp "(\\(clojure/\\)?ns\\W+:?\\(.*\\>\\)"))
+  (let ((regexp "(\\(clojure/\\)?\\(in-\\)?ns\\W+[:']?\\(.*\\>\\)"))
     (save-excursion
       (when (or (re-search-backward regexp nil t)
                 (re-search-forward regexp nil t))
-        (match-string-no-properties 2)))))
+        (match-string-no-properties 3)))))
 
 (defun swank-clojure-slime-mode-hook ()
   (slime-mode 1)
