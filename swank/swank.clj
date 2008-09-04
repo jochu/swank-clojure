@@ -1,5 +1,5 @@
-(create-ns 'swank)
-(ns swank
+(clojure/create-ns 'swank)
+(clojure/ns swank
     (:import (java.io InputStreamReader PushbackReader StringReader Reader
                        BufferedReader FileReader
                        OutputStreamWriter FileWriter Writer StringWriter
