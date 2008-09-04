@@ -1,45 +1,40 @@
-
 Copyright (C) 2008 Jeffrey Chu
 
 This file is licensed under the terms of the GNU General Public
 License as distributed with Emacs (press C-h C-c to view it).
 
-Instructions for use:
+Installation
 
-  1. First you need to have the latest SVN copy of clojure and the
-     latest CVS version of slime (this has been untested for any
-     other version). (Latest as of 2008-05-08)
+  1. Download & install CVS/SVN versions of clojure [1] and slime [2].
+        
+  2. Add swank-clojure to your .emacs file:
 
-  2. Use a script that will start clojure while providing java a
-     pid, name it "clojure", and place it in your PATH. If no pid
-     is provided, swank-clojure will fallback on JDK
-     implementation specific methods of getting the pid. It may
-     not work on other JVMs.
-
-     For an example of a script that does this, see
-     sh-script/clojure in the clojure-extra repository at:
-        http://clojure.codestuffs.com/
-
-     If this is not possible, you must edit swank-clojure.el and
-     change the slime-lisp-implementations.
-
-  3. If you haven't already, set the default lisp to load for
-     slime via slime-lisp-implementations. If you want the default
-     to be clojure, you may skip this step.
-
-     Example for sbcl:
-       (setq slime-lisp-implementations '((sbcl "sbcl")))
-
-  4. Add to your .emacs
        (add-to-list 'load-path "/path/to/swank-clojure")
+       (require 'swank-clojure-autoload)
+
+  3. Customize the path to your clojure jar file. Optionally, also
+     customize other classpath information.
+
+       (setq swank-clojure-jar-path "/path/to/clojure.jar")
+
+         or
+
        (require 'swank-clojure)
+       M-x customize-group swank-clojure
 
-  5. Start slime by:
-      M-- M-x slime clojure
+  4. Optionally, add your default lisp implementation back into slime
+     (add to .emacs):
+
+       Example for sbcl:
+         (add-to-list slime-lisp-implementations '((sbcl "sbcl")))
+
+  5. Start slime! 
+
+       M-x slime
+
+       Or if you did step 4:
+          M-- M-x slime clojure
 
 
-This is a preliminary version that doesn't support several slime
-features, but I'm working on it...
-
-Known issues:
- - Missing inspection, debugging, and a few other slime functions
+[1] Clojure SVN: http://sourceforge.net/svn/?group_id=137961
+[2] Slime CVS: http://common-lisp.net/project/slime/#downloading

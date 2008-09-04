@@ -8,45 +8,76 @@
 ;;; See swank-clojure.clj for instructions
 ;;;
 
-(eval-after-load "slime"
-  '(require 'clojure-mode))
-
 (eval-and-compile 
-  (defvar clojure-swank-path
+  (defvar swank-clojure-path
     (let ((path (file-truename (or (locate-library "swank-clojure")
                                    load-file-name))))
       (and path (file-name-directory path)))
     "Directory containing the swank-clojure package. This is used
-     to load the supporting clojure library swank."))
+to load the supporting clojure library swank."))
 
-(defun clojure-init (file encoding)
+(defgroup swank-clojure nil
+  "SLIME/swank support for clojure"
+  :prefix "swank-clojure-"
+  :group 'applications)
+
+(defcustom swank-clojure-java-path "java"
+  "The location of the java executable"
+  :type 'string
+  :group 'swank-clojure)
+
+(defcustom swank-clojure-jar-path nil
+  "The location of the jar file for clojure. For example,
+/path/to/clojure.jar "
+  :type 'string
+  :group 'swank-clojure)
+
+(defcustom swank-clojure-extra-classpaths (list (file-truename "~/.clojure/*")) 
+  "The classpath from which clojure will load from (passed into
+java as the -cp argument). On default, it includes all jar files
+within ~/.clojure/"
+  :type 'list
+  :group 'swank-clojure)
+
+
+
+
+(defun swank-clojure-init (file encoding)
   (format "%S\n\n%S\n\n%S\n\n"
           `(clojure/require 'swank)
           (when (boundp 'slime-protocol-version)
             `(swank/ignore-protocol-version ,slime-protocol-version))
           `(swank/start-server ,file)))
 
-(add-to-list 'slime-lisp-implementations
-             '(clojure ("clojure") :init clojure-init)
-             t)
-
-(defun find-clojure-package ()
-  (let ((regexp (concat "^(\\(clojure/\\)?in-ns\\>[ \t']*"
-                        "\\([^)]+\\)[ \t]*)")))
+(defun swank-clojure-find-package ()
+  (let ((regexp "(\\(clojure/\\)?ns\\W+:?\\(.*\\>\\)"))
     (save-excursion
       (when (or (re-search-backward regexp nil t)
                 (re-search-forward regexp nil t))
         (match-string-no-properties 2)))))
 
-(defun clojure-slime-mode-hook ()
+(defun swank-clojure-slime-mode-hook ()
   (slime-mode 1)
-  (set (make-local-variable 'slime-find-buffer-package-function) 'find-clojure-package))
+  (set (make-local-variable 'slime-find-buffer-package-function) 'swank-clojure-find-package))
 
-(defun clojure-update-indentation (sym indent)
+(defun swank-clojure-update-indentation (sym indent)
   (put sym 'clojure-indent-function indent))
 
+(defun swank-clojure-cmd ()
+  "Create the command to start clojure based off of current configuration settings"
+  (when (not swank-clojure-jar-path)
+    (error "Error: You must specify a swank-clojure-jar-path. Please see README of swank-clojure."))
+  (list swank-clojure-java-path
+        "-cp"
+        (mapconcat 'identity
+                   (append (list swank-clojure-jar-path
+                                 swank-clojure-path)
+                           swank-clojure-extra-classpaths)
+                   path-separator)
+        "clojure.lang.Repl"))
+
 ;; Change the repl to be more clojure friendly
-(defun clojure-slime-repl-modify-syntax ()
+(defun swank-clojure-slime-repl-modify-syntax ()
   (when (string-match "\\*slime-repl clojure\\*" (buffer-name))
     ;; modify syntax
     (modify-syntax-entry ?~ "'   ")
@@ -64,9 +95,5 @@
     (when (featurep 'clojure-paredit)
       (define-key slime-repl-mode-map "{" 'paredit-open-brace)
       (define-key slime-repl-mode-map "}" 'paredit-close-brace))))
-
-(add-hook 'slime-indentation-update-hooks 'clojure-update-indentation)
-(add-hook 'slime-repl-mode-hook 'clojure-slime-repl-modify-syntax t)
-(add-hook 'clojure-mode-hook 'clojure-slime-mode-hook t)
 
 (provide 'swank-clojure)
