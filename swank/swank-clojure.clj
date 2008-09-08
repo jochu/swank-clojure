@@ -4,7 +4,7 @@
 ;; (binding [*warn-on-reflection* nil] ;; suppress the warnings!
 ;;   (. clojure.lang.RT loadResourceScript "genclass.clj"))
 
-(ns swank)
+(in-ns 'swank)
 
 ;;;; General coding utils
 

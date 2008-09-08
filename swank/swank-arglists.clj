@@ -1,4 +1,4 @@
-(ns swank)
+(in-ns 'swank)
 
 (defn arglist-for-echo-area [raw-specs & options]
   (let [{:keys [arg-indices
