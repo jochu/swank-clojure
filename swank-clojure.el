@@ -50,7 +50,7 @@ swank-clojure-java-path) if non-nil."
 
 (defun swank-clojure-init (file encoding)
   (format "%S\n\n%S\n\n%S\n\n%S\n\n"
-          `(clojure/add-classpath ,(concat "file://" swank-clojure-path))
+          `(clojure/add-classpath ,(concat "file:///" swank-clojure-path))
           `(clojure/require 'swank)
           (when (boundp 'slime-protocol-version)
             `(swank/ignore-protocol-version ,slime-protocol-version))
