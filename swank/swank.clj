@@ -8,4 +8,4 @@
            (java.net ServerSocket Socket InetAddress)
            (java.util.zip ZipFile)))
 
-(load-resources "swank-clojure.clj" "swank-c-p-c.clj" "swank-arglists.clj")
+(load "swank-clojure.clj" "swank-c-p-c.clj" "swank-arglists.clj")
