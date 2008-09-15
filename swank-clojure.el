@@ -52,8 +52,6 @@ swank-clojure-java-path) if non-nil."
   :group 'swank-clojure)
 
 
-
-
 (defun swank-clojure-init (file encoding)
   (format "%S\n\n%S\n\n%S\n\n%S\n\n"
           `(clojure/add-classpath ,(concat "file://" swank-clojure-path))
@@ -84,20 +82,21 @@ swank-clojure-java-path) if non-nil."
         (list swank-clojure-binary))
     (if (not swank-clojure-jar-path)
         (error "Error: You must specify a swank-clojure-jar-path. Please see README of swank-clojure.")
-      (list swank-clojure-java-path
-            (if swank-clojure-library-paths
-                (concat "-Djava.library.path="
-                        (mapconcat 'identity
-                                   swank-clojure-library-paths
-                                   path-separator))
-                "")
-            "-cp"
-            (mapconcat 'identity
-                       (cons swank-clojure-jar-path
-                             swank-clojure-extra-classpaths)
-                       path-separator)
-            
-            "clojure.lang.Repl"))))
+        (delete-if (lambda (x) (null x)) 
+                   (list swank-clojure-java-path
+                         (if swank-clojure-library-paths
+                             (concat "-Djava.library.path="
+                                     (mapconcat 'identity
+                                                swank-clojure-library-paths
+                                                path-separator))
+                             nil)
+                         "-cp"
+                         (mapconcat 'identity
+                                    (cons swank-clojure-jar-path
+                                          swank-clojure-extra-classpaths)
+                                    path-separator)
+                         
+                         "clojure.lang.Repl")))))
 
 ;; Change the repl to be more clojure friendly
 (defun swank-clojure-slime-repl-modify-syntax ()
