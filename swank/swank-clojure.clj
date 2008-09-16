@@ -1021,7 +1021,7 @@
 (defn connection-info []
   `(:pid ~(get-pid)
     :style ~(*emacs-connection* :communication-style)
-    :lisp-implementation (:type "clojure")
+    :lisp-implementation (:type "clojure" :name "clojure")
     :package (:name ~(str (ns-name *ns*))
               :prompt ~(str (ns-name *ns*)))
     :version ~(deref *protocol-version*)))
@@ -1146,10 +1146,15 @@
          [(. symbol (substring 0 ns-pos))
           (. symbol (substring (+ ns-pos 1)))]))))
 
+(defn maybe-alias [sym pkg]
+  (if-let ns (find-ns sym)
+    ns
+    (sym (ns-aliases (maybe-ns pkg)))))
+
 (defn simple-completions [string package]
   (try
    (let [[sym-ns sym-name] (symbol-name-parts string)
-         ns (if sym-ns (find-ns (symbol sym-ns)) (maybe-ns package))
+         ns (if sym-ns (maybe-alias (symbol sym-ns)) (maybe-ns package))
          vars (vals (if sym-ns (ns-publics ns) (ns-map ns)))
          matches (sort (vars-start-with sym-name vars))]
      (if sym-ns
@@ -1198,7 +1203,7 @@
 
 (defn describe-symbol [symbol-name]
   (with-buffer-syntax
-   (if-let v (resolve (symbol symbol-name))
+   (if-let v (ns-resolve (maybe-ns *buffer-package*) (symbol symbol-name))
      (describe-to-string v)
      (str "Unknown symbol " symbol-name))))
 
@@ -1250,20 +1255,26 @@
           (get-path-prop "java.class.path")
           (get-path-prop "sun.boot.class.path")))
 
+(defn ns-path [ns]
+  (.. (ns-name ns)
+      toString
+      (replace \- \_)
+      (replace \. \/)))
+
 (defn find-definitions-for-emacs [name]
   (let [sym-name (from-string name)
-        metas (map meta (vals (ns-map (maybe-ns *buffer-package*))))
-        definition
-        (fn definition [meta]
-          (if-let path (slime-find-file-in-paths (:file meta) (slime-search-paths))
-            `(~(str "(defn " (:name meta) ")")
-              (:location
-               ~path
-               (:line ~(:line meta))
-               nil))
-            `(~(str (:name meta))
-              (:error "Source definition not found."))))]
-    (map definition (filter #(= (:name %) sym-name) metas))))
+        sym-var (ns-resolve (maybe-ns *buffer-package*) sym-name)]
+    (if-let meta (meta sym-var)
+      (list (if-let path (slime-find-file-in-paths
+                          (str (ns-path (:ns meta)) "/" (:file meta))
+                          (slime-search-paths))
+              `(~(str "(defn " (:name meta) ")")
+                (:location
+                 ~path
+                 (:line ~(:line meta))
+                 nil))
+              `(~(str (:name meta))
+                (:error "Source definition not found.")))))))
 
 ;;;; Indentation & indentation cache
 

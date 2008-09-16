@@ -39,13 +39,17 @@ within ~/.clojure/"
   :type 'list
   :group 'swank-clojure)
 
+(defcustom swank-clojure-library-paths nil
+  "The library paths used when loading shared libraries, 
+used to set the java.library.path property"
+  :type 'list
+  :group 'swank-clojure)
+
 (defcustom swank-clojure-binary nil
   "Used as a binary executable (instead of
 swank-clojure-java-path) if non-nil."
   :type 'string
   :group 'swank-clojure)
-
-
 
 
 (defun swank-clojure-init (file encoding)
@@ -78,13 +82,21 @@ swank-clojure-java-path) if non-nil."
         (list swank-clojure-binary))
     (if (not swank-clojure-jar-path)
         (error "Error: You must specify a swank-clojure-jar-path. Please see README of swank-clojure.")
-      (list swank-clojure-java-path
-            "-cp"
-            (mapconcat 'identity
-                       (cons swank-clojure-jar-path
-                             swank-clojure-extra-classpaths)
-                       path-separator)
-            "clojure.lang.Repl"))))
+        (delete-if (lambda (x) (null x)) 
+                   (list swank-clojure-java-path
+                         (if swank-clojure-library-paths
+                             (concat "-Djava.library.path="
+                                     (mapconcat 'identity
+                                                swank-clojure-library-paths
+                                                path-separator))
+                             nil)
+                         "-cp"
+                         (mapconcat 'identity
+                                    (cons swank-clojure-jar-path
+                                          swank-clojure-extra-classpaths)
+                                    path-separator)
+                         
+                         "clojure.lang.Repl")))))
 
 ;; Change the repl to be more clojure friendly
 (defun swank-clojure-slime-repl-modify-syntax ()
