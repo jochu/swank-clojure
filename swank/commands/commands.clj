@@ -7,7 +7,7 @@
      `(alter-var-root #'slime-fn-map
                       assoc
                       (symbol "swank" ~(name fname))
-                      (fn ~fname ~@body)))
+		      (defn ~fname ~@body)))
   {:indent 'defun})
 
 (defn slime-fn [sym]

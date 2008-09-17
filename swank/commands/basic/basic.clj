@@ -1,4 +1,5 @@
 (ns swank.commands.basic
+  (:refer-clojure :exclude [load-file])
   (:use (swank util commands core)
         (swank.util.concurrent thread))
   (:require (swank.util [sys :as sys]))
@@ -96,7 +97,7 @@
   ([file-name]
      (let [start (System/nanoTime)]
        (try
-        (let [ret (load-file file-name)
+        (let [ret (clojure/load-file file-name)
               delta (- (System/nanoTime) start)]
           `(:swank-compilation-unit nil (~ret) (~(/ delta 1000000000.0))))
         (catch Throwable t
