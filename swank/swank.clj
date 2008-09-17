@@ -14,7 +14,7 @@
         (swank.util.concurrent thread))
   (:require (swank.util.concurrent [mbox :as mb])
             (swank commands)
-            (swank.commands basic indent contrib)))
+            (swank.commands basic indent contrib inspector)))
 
 (defn ignore-protocol-version [version]
   (dosync (ref-set *protocol-version* version)))

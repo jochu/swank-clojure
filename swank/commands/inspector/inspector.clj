@@ -238,7 +238,7 @@
 
 (defslimefn inspect-nth-part [index]
   (with-emacs-package
-   (inspect-object (inspector-nth-part index))))
+   (inspect-object ((slime-fn 'inspector-nth-part) index))))
 
 (defslimefn inspector-range [from to]
   (content-range @*inspectee-content* from to))
