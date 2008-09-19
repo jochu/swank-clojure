@@ -67,7 +67,7 @@ swank-clojure-java-path) if non-nil."
           `(swank/start-server ,file)))
 
 (defun swank-clojure-find-package ()
-  (let ((regexp "^(\\(clojure/\\)?\\(in-\\)?ns\\W+[:']?\\(.*\\>\\)"))
+  (let ((regexp "^(\\(clojure/\\)?\\(in-\\)?ns\\s-+[:']?\\(.*\\>\\)"))
     (save-excursion
       (when (or (re-search-backward regexp nil t)
                 (re-search-forward regexp nil t))
