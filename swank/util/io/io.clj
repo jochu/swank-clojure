@@ -26,7 +26,7 @@
                             (.. me getBuffer (delete 0 len)))))))]
 
        (dothread
-         (thread-set-name "Call on write stream")
+         (thread-set-name "Call-on-write Stream")
          (continuously
            (.sleep Thread 200)
            (when-not @closed?
