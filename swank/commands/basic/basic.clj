@@ -47,6 +47,10 @@
   (with-emacs-package
    (with-package-tracking
     (let [[value last-form] (eval-region form)]
+      (when (and last-form (not (one-of? last-form '*1 '*2 '*3)))
+        (set! *3 *2)
+        (set! *2 *1)
+        (set! *1 value))
       (send-repl-results-to-emacs value)))))
 
 ;;;; Macro expansion

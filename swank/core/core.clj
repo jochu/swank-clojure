@@ -46,7 +46,7 @@
 
 (defn eval-in-emacs-package [form]
   (with-emacs-package
-   (eval form)))
+    (eval form)))
 
 
 (defn eval-from-control
@@ -121,7 +121,8 @@
   "Spawn an thread that blocks for a single command from the control
    thread, executes it, then terminates."
   ([conn]
-     (dothread-keeping [*out* *ns* *current-connection*]
+                                        ; TODO: *warn-on-reflection* *e
+     (dothread-keeping [*out* *ns* *current-connection* *1 *2 *3]
        (thread-set-name "Swank Worker Thread")
        (eval-from-control))))
 
@@ -129,7 +130,7 @@
   "Spawn an thread that sets itself as the current
    connection's :repl-thread and then enters an eval-loop"
   ([conn]
-     (dothread-keeping [*out* *ns*]
+     (dothread-keeping [*out* *ns* *1 *2 *3]
        (thread-set-name "Swank REPL Thread")
        (with-connection conn
          (eval-loop)))))
@@ -195,5 +196,6 @@
    it (will block if no mbox control message is available). This is
    intended to only be run on the control thread."
   ([conn]
-     (with-connection conn
-       (continuously (dispatch-event (mb/receive (current-thread)) conn)))))
+     (binding [*1 nil, *2 nil, *3 nil]
+       (with-connection conn
+         (continuously (dispatch-event (mb/receive (current-thread)) conn))))))
