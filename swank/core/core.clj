@@ -132,7 +132,6 @@
      (dothread-keeping [*out* *ns*]
        (thread-set-name "Swank REPL Thread")
        (with-connection conn
-         (dosync (ref-set (conn :repl-thread) (current-thread)))
          (eval-loop)))))
 
 (defn find-or-spawn-repl-thread
@@ -140,7 +139,10 @@
    the existing one does not exist."
   ([conn]
      ;; TODO - check if an existing repl-agent is still active & doesn't have errors
-     (or @(conn :repl-thread) (spawn-repl-thread conn))))
+     (dosync
+      (or @(conn :repl-thread)
+          (ref-set (conn :repl-thread)
+                   (spawn-repl-thread conn))))))
 
 (defn thread-for-evaluation
   "Given an id and connection, find or create the appropiate agent."
