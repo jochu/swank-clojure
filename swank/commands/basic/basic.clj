@@ -151,7 +151,7 @@
   (try
    (let [f (read-from-string name)]
      (cond
-      (keyword? f) "[map]"
+      (keyword? f) "([map])"
       (symbol? f) (let [var (ns-resolve (maybe-ns package) f)]
                     (if-let args (and var (:arglists (meta var)))
                       (pr-str args)
