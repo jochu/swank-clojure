@@ -280,17 +280,17 @@
   (let [sym-name (read-from-string name)
         sym-var (ns-resolve (maybe-ns *current-package*) sym-name)]
     (when-let meta (and sym-var (meta sym-var))
-      (list (if-let path (or (slime-find-file-in-paths (str (namespace-to-path (:ns meta))
-                                                            (.separator File)
-                                                            (:file meta)) (slime-search-paths))
-                             (slime-find-file-in-paths (:file meta) (slime-search-paths)))
-              `(~(str "(defn " (:name meta) ")")
-                (:location
-                 ~path
-                 (:line ~(:line meta))
-                 nil))
-              `(~(str (:name meta))
-                (:error "Source definition not found.")))))))
+      (if-let path (or (slime-find-file-in-paths (str (namespace-to-path (:ns meta))
+                                                      (.separator File)
+                                                      (:file meta)) (slime-search-paths))
+                       (slime-find-file-in-paths (:file meta) (slime-search-paths)))
+        `((~(str "(defn " (:name meta) ")")
+           (:location
+            ~path
+            (:line ~(:line meta))
+            nil)))
+        `((~(str (:name meta))
+           (:error "Source definition not found.")))))))
 
 
 (defslimefn throw-to-toplevel []
