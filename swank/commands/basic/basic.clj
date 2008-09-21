@@ -71,14 +71,14 @@
 ;;;; Compiler / Execution
 
 (def *compiler-exception-location-re* #"^clojure\\.lang\\.Compiler\\$CompilerException: ([^:]+):([^:]+):")
-(defn- guess-compiler-exception-location [#^clojure.lang.Compiler$CompilerException t]
-  (let [[match file line] (re-find *compiler-exception-location-re* (.toString t))]
+(defn- guess-compiler-exception-location [#^Throwable exception]
+  (let [[match file line] (re-find *compiler-exception-location-re* (.toString exception))]
     (when (and file line)
       `(:location (:file ~file) (:line ~(Integer/parseInt line)) nil))))
 
 ;; TODO: Make more and better guesses
-(defn- exception-location [#^Throwable t]
-  (or (guess-compiler-exception-location t)
+(defn- exception-location [#^Throwable exception]
+  (or (guess-compiler-exception-location exception)
       '(:error "No error location available")))
 
 ;; plist of message, severity, location, references, short-message
@@ -108,6 +108,7 @@
           (let [delta (- (System/nanoTime) start)
                 causes (exception-causes t)
                 num (count causes)]
+            (.printStackTrace t) ;; prints to *inferior-lisp*
             `(:swank-compilation-unit
               ~(map exception-to-message causes) ;; notes
               ~(take num (repeat nil)) ;; results

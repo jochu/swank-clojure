@@ -79,7 +79,7 @@
            (throw t))))))
 
 (defn invoke-debugger [thrown id]
-  (dothread-keeping [*out* *ns* *current-connection*]
+  (dothread-keeping [*out* *ns* *current-connection* *warn-on-reflection*]
     (thread-set-name "Swank Debugger Thread")
     (binding [*current-exception* thrown]
       (let [level 1
@@ -121,8 +121,7 @@
   "Spawn an thread that blocks for a single command from the control
    thread, executes it, then terminates."
   ([conn]
-                                        ; TODO: *warn-on-reflection* *e
-     (dothread-keeping [*out* *ns* *current-connection* *1 *2 *3]
+     (dothread-keeping [*out* *ns* *current-connection* *1 *2 *3 *warn-on-reflection*]
        (thread-set-name "Swank Worker Thread")
        (eval-from-control))))
 
@@ -130,7 +129,7 @@
   "Spawn an thread that sets itself as the current
    connection's :repl-thread and then enters an eval-loop"
   ([conn]
-     (dothread-keeping [*out* *ns* *1 *2 *3]
+     (dothread-keeping [*out* *ns* *1 *2 *3 *warn-on-reflection*]
        (thread-set-name "Swank REPL Thread")
        (with-connection conn
          (eval-loop)))))
