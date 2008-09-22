@@ -67,10 +67,11 @@
 ;;;; Compiler / Execution
 
 (def *compiler-exception-location-re* #"^clojure\\.lang\\.Compiler\\$CompilerException: ([^:]+):([^:]+):")
-(defn- guess-compiler-exception-location [#^clojure.lang.Compiler$CompilerException t]
-  (let [[match file line] (re-find *compiler-exception-location-re* (.toString t))]
-    (when (and file line)
-      `(:location (:file ~file) (:line ~(Integer/parseInt line)) nil))))
+(defn- guess-compiler-exception-location [t]
+  (when (instance? clojure.lang.Compiler$CompilerException t)
+    (let [[match file line] (re-find *compiler-exception-location-re* (.toString t))]
+      (when (and file line)
+        `(:location (:file ~file) (:line ~(Integer/parseInt line)) nil)))))
 
 ;; TODO: Make more and better guesses
 (defn- exception-location [#^Throwable t]
