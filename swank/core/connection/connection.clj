@@ -28,6 +28,6 @@
   {:tag String})
 
 (defn write-to-connection
-  ([msg] (read-from-connection *current-connection* msg))
+  ([msg] (write-to-connection *current-connection* msg))
   ([conn msg]
      (write-swank-message (conn :writer) msg)))
