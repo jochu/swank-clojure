@@ -60,18 +60,27 @@
    evaluates them (will block if no mbox message is available)."
   ([] (continuously (eval-from-control))))
 
+(defn- exception-causes [#^Throwable t]
+  (lazy-cons t (when-let cause (.getCause t)
+                 (exception-causes cause))))
+
+(defn- debug-quit-exception? [t]
+  (some #(instance? swank.core.DebugQuitException %) (exception-causes t)))
+
 (defn debug-loop
   "A loop that is intented to take over an eval thread when a debug is
    encountered (an continue to perform the same thing). It will
    continue until a *debug-quit* exception is encountered."
   ([] (try
        (eval-loop)
-       (catch swank.core.DebugQuitException t
-         ;; exit loop and return to orriginal
-         nil))))
+       (catch Throwable t
+         ;; exit loop when not a debug quit
+         (when-not (debug-quit-exception? t)
+           (throw t))))))
 
 (defn invoke-debugger [thrown id]
   (dothread-keeping [*out* *ns* *current-connection*]
+    (thread-set-name "Swank Debugger Thread")
     (binding [*current-exception* thrown]
       (let [level 1
             message (list (or (.getMessage thrown) "No message.")
@@ -97,11 +106,12 @@
          (send-to-emacs `(:return ~(thread-name (current-thread)) (:ok ~result) ~id)))
        ;; swank function not defined, abort
        (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id))))
-   (catch swank.core.DebugQuitException t
-     ;; Throwing to top level, let emacs know we're aborting
-     (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id))
-     (throw t))
    (catch Throwable t
+     ;; Throwing to top level, let emacs know we're aborting
+     (when (debug-quit-exception? t)
+       (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id))
+       (throw t))
+     
      ;; start sldb, don't bother here because you can't actually recover with java
      (invoke-debugger t id)
      ;; reply with abort
@@ -112,6 +122,7 @@
    thread, executes it, then terminates."
   ([conn]
      (dothread-keeping [*out* *ns* *current-connection*]
+       (thread-set-name "Swank Worker Thread")
        (eval-from-control))))
 
 (defn spawn-repl-thread
@@ -119,8 +130,8 @@
    connection's :repl-thread and then enters an eval-loop"
   ([conn]
      (dothread-keeping [*out* *ns*]
+       (thread-set-name "Swank REPL Thread")
        (with-connection conn
-         (dosync (ref-set (conn :repl-thread) (current-thread)))
          (eval-loop)))))
 
 (defn find-or-spawn-repl-thread
@@ -128,7 +139,10 @@
    the existing one does not exist."
   ([conn]
      ;; TODO - check if an existing repl-agent is still active & doesn't have errors
-     (or @(conn :repl-thread) (spawn-repl-thread conn))))
+     (dosync
+      (or @(conn :repl-thread)
+          (ref-set (conn :repl-thread)
+                   (spawn-repl-thread conn))))))
 
 (defn thread-for-evaluation
   "Given an id and connection, find or create the appropiate agent."
