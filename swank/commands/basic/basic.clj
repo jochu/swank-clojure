@@ -40,8 +40,7 @@
 
 (defslimefn interactive-eval [string]
   (with-emacs-package
-   (let [result (eval (read-from-string string))]
-     (pr-str (first (eval-region string))))))
+    (pr-str (first (eval-region string)))))
 
 (defslimefn listener-eval [form]
   (with-emacs-package
