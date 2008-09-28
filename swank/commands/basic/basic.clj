@@ -40,8 +40,7 @@
 
 (defslimefn interactive-eval [string]
   (with-emacs-package
-   (let [result (eval (read-from-string string))]
-     (pr-str (first (eval-region string))))))
+    (pr-str (first (eval-region string)))))
 
 (defslimefn listener-eval [form]
   (with-emacs-package
@@ -67,10 +66,11 @@
 ;;;; Compiler / Execution
 
 (def *compiler-exception-location-re* #"^clojure\\.lang\\.Compiler\\$CompilerException: ([^:]+):([^:]+):")
-(defn- guess-compiler-exception-location [#^clojure.lang.Compiler$CompilerException t]
-  (let [[match file line] (re-find *compiler-exception-location-re* (.toString t))]
-    (when (and file line)
-      `(:location (:file ~file) (:line ~(Integer/parseInt line)) nil))))
+(defn- guess-compiler-exception-location [t]
+  (when (instance? clojure.lang.Compiler$CompilerException t)
+    (let [[match file line] (re-find *compiler-exception-location-re* (.toString t))]
+      (when (and file line)
+        `(:location (:file ~file) (:line ~(Integer/parseInt line)) nil)))))
 
 ;; TODO: Make more and better guesses
 (defn- exception-location [#^Throwable t]
@@ -151,7 +151,7 @@
   (try
    (let [f (read-from-string name)]
      (cond
-      (keyword? f) "[map]"
+      (keyword? f) "([map])"
       (symbol? f) (let [var (ns-resolve (maybe-ns package) f)]
                     (if-let args (and var (:arglists (meta var)))
                       (pr-str args)
@@ -280,17 +280,17 @@
   (let [sym-name (read-from-string name)
         sym-var (ns-resolve (maybe-ns *current-package*) sym-name)]
     (when-let meta (and sym-var (meta sym-var))
-      (list (if-let path (or (slime-find-file-in-paths (str (namespace-to-path (:ns meta))
-                                                            (.separator File)
-                                                            (:file meta)) (slime-search-paths))
-                             (slime-find-file-in-paths (:file meta) (slime-search-paths)))
-              `(~(str "(defn " (:name meta) ")")
-                (:location
-                 ~path
-                 (:line ~(:line meta))
-                 nil))
-              `(~(str (:name meta))
-                (:error "Source definition not found.")))))))
+      (if-let path (or (slime-find-file-in-paths (str (namespace-to-path (:ns meta))
+                                                      (.separator File)
+                                                      (:file meta)) (slime-search-paths))
+                       (slime-find-file-in-paths (:file meta) (slime-search-paths)))
+        `((~(str "(defn " (:name meta) ")")
+           (:location
+            ~path
+            (:line ~(:line meta))
+            nil)))
+        `((~(str (:name meta))
+           (:error "Source definition not found.")))))))
 
 
 (defslimefn throw-to-toplevel []
