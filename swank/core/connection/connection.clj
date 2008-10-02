@@ -12,11 +12,13 @@
 
 (defn make-connection [#^Socket socket]
   {:socket socket
-   :reader (InputStreamReader. (.getInputStream socket))
-   :writer (OutputStreamWriter. (.getOutputStream socket))
+   :reader (InputStreamReader. (.getInputStream socket) "iso-8859-1")
+   :writer (OutputStreamWriter. (.getOutputStream socket) "iso-8859-1")
    :writer-redir (ref nil)
+   
    :indent-cache (ref {})
    :indent-cache-pkg (ref nil)
+   
    :control-thread (ref nil)
    :read-thread (ref nil)
    :repl-thread (ref nil)})
