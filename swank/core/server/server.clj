@@ -43,7 +43,7 @@
 (def dont-close nil)
 
 (defn- socket-serve [connection-serve socket opts]
-  (with-connection (accept-authenticated-connection socket (get opts :encoding *default-encoding*))
+  (with-connection (accept-authenticated-connection socket opts)
     (binding [*out* (make-output-redirection *current-connection*)]
       (dosync (ref-set (*current-connection* :writer-redir) *out*))
       (dosync (alter *connections* conj *current-connection*))

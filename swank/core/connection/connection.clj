@@ -11,12 +11,28 @@
 (defmacro with-connection [conn & body]
   `(binding [*current-connection* ~conn] ~@body))
 
+(def encoding-map
+     {"latin-1" "iso-8859-1"
+      "latin-1-unix" "iso-8859-1"
+      "iso-latin-1-unix" "iso-8859-1"
+      "iso-8859-1" "iso-8859-1"
+      "iso-8859-1-unix" "iso-8859-1"
+
+      "utf-8" "utf-8"
+      "utf-8-unix" "utf-8"
+
+      "euc-jp" "euc-jp"
+      "euc-jp-unix" "euc-jp"
+
+      "us-ascii" "us-ascii" 
+      "us-ascii-unix" "us-ascii"})
+
 (defn make-connection
   ([#^Socket socket] (make-connection socket *default-encoding*))
   ([#^Socket socket encoding]
      {:socket socket
-      :reader (InputStreamReader. (.getInputStream socket) encoding)
-      :writer (OutputStreamWriter. (.getOutputStream socket) encoding)
+      :reader (InputStreamReader. (.getInputStream socket) (get encoding-map encoding encoding))
+      :writer (OutputStreamWriter. (.getOutputStream socket) (get encoding-map encoding encoding))
       :writer-redir (ref nil)
    
       :indent-cache (ref {})
