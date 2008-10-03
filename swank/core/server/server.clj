@@ -27,8 +27,8 @@
 (defn- accept-authenticated-connection
   "If a slime-secret file exists, verify that the incomming connection
    has sent it and the authentication string matches."
-  ([#^Socket socket]
-     (returning conn (make-connection socket)
+  ([#^Socket socket opts]
+     (returning conn (make-connection socket (get opts :encoding *default-encoding*))
        (when-let secret (slime-secret)
          (let [first-val (read-from-connection conn)]
            (when-not (= first-val secret)
@@ -42,8 +42,8 @@
 
 (def dont-close nil)
 
-(defn- socket-serve [connection-serve socket]
-  (with-connection (accept-authenticated-connection socket)
+(defn- socket-serve [connection-serve socket opts]
+  (with-connection (accept-authenticated-connection socket (get opts :encoding *default-encoding*))
     (binding [*out* (make-output-redirection *current-connection*)]
       (dosync (ref-set (*current-connection* :writer-redir) *out*))
       (dosync (alter *connections* conj *current-connection*))
@@ -56,8 +56,8 @@
   "Starts a server. The port it started on will be called as an
   argument to (announce-fn port). A connection will then be created
   and (connection-serve conn) will then be called."
-  ([port announce-fn connection-serve]
-     (let [ss (socket-server port (partial socket-serve connection-serve))
+  ([port announce-fn connection-serve opts]
+     (let [ss (socket-server port #(socket-serve connection-serve % opts))
            local-port (.getLocalPort ss)]
        (announce-fn local-port)
        local-port)))

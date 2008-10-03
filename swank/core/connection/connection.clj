@@ -6,22 +6,25 @@
            (java.io InputStreamReader OutputStreamWriter)))
 
 (def *current-connection*)
+(def *default-encoding* "iso-8859-1")
 
 (defmacro with-connection [conn & body]
   `(binding [*current-connection* ~conn] ~@body))
 
-(defn make-connection [#^Socket socket]
-  {:socket socket
-   :reader (InputStreamReader. (.getInputStream socket) "iso-8859-1")
-   :writer (OutputStreamWriter. (.getOutputStream socket) "iso-8859-1")
-   :writer-redir (ref nil)
+(defn make-connection
+  ([#^Socket socket] (make-connection socket *default-encoding*))
+  ([#^Socket socket encoding]
+     {:socket socket
+      :reader (InputStreamReader. (.getInputStream socket) encoding)
+      :writer (OutputStreamWriter. (.getOutputStream socket) encoding)
+      :writer-redir (ref nil)
    
-   :indent-cache (ref {})
-   :indent-cache-pkg (ref nil)
+      :indent-cache (ref {})
+      :indent-cache-pkg (ref nil)
    
-   :control-thread (ref nil)
-   :read-thread (ref nil)
-   :repl-thread (ref nil)})
+      :control-thread (ref nil)
+      :read-thread (ref nil)
+      :repl-thread (ref nil)}))
 
 (defn read-from-connection
   ([] (read-from-connection *current-connection*))
