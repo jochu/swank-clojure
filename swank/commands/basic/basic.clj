@@ -40,8 +40,7 @@
 
 (defslimefn interactive-eval [string]
   (with-emacs-package
-   (let [result (eval (read-from-string string))]
-     (pr-str (first (eval-region string))))))
+    (pr-str (first (eval-region string)))))
 
 (defslimefn listener-eval [form]
   (with-emacs-package
@@ -71,14 +70,15 @@
 ;;;; Compiler / Execution
 
 (def *compiler-exception-location-re* #"^clojure\\.lang\\.Compiler\\$CompilerException: ([^:]+):([^:]+):")
-(defn- guess-compiler-exception-location [#^Throwable exception]
-  (let [[match file line] (re-find *compiler-exception-location-re* (.toString exception))]
-    (when (and file line)
-      `(:location (:file ~file) (:line ~(Integer/parseInt line)) nil))))
+(defn- guess-compiler-exception-location [t]
+  (when (instance? clojure.lang.Compiler$CompilerException t)
+    (let [[match file line] (re-find *compiler-exception-location-re* (.toString t))]
+      (when (and file line)
+        `(:location (:file ~file) (:line ~(Integer/parseInt line)) nil)))))
 
 ;; TODO: Make more and better guesses
-(defn- exception-location [#^Throwable exception]
-  (or (guess-compiler-exception-location exception)
+(defn- exception-location [#^Throwable t]
+  (or (guess-compiler-exception-location t)
       '(:error "No error location available")))
 
 ;; plist of message, severity, location, references, short-message

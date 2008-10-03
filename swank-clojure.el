@@ -58,7 +58,7 @@ swank-clojure-java-path) if non-nil."
           `(clojure/require 'swank)
           (when (boundp 'slime-protocol-version)
             `(swank/ignore-protocol-version ,slime-protocol-version))
-          `(swank/start-server ,file)))
+          `(swank/start-server ,file :encoding ,(format "%s" encoding))))
 
 (defun swank-clojure-find-package ()
   (let ((regexp "^(\\(clojure/\\)?\\(in-\\)?ns\\s-+[:']?\\(.*\\>\\)"))
