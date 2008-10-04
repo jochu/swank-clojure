@@ -118,6 +118,12 @@
 (defslimefn load-file [file-name]
   (pr-str (clojure/load-file file-name)))
 
+(defslimefn compile-string-for-emacs [string buffer position directory debug]
+  (let [start (System/nanoTime)
+        ret (with-emacs-package (eval-region string))
+        delta (- (System/nanoTime) start)]
+    `(:swank-compilation-unit nil (~ret) (~(/ delta 1000000000.0)))))
+
 ;;;; Describe
 
 (defn- describe-to-string [var]
