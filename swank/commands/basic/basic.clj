@@ -99,15 +99,15 @@
        (try
         (let [ret (clojure/load-file file-name)
               delta (- (System/nanoTime) start)]
-          `(:swank-compilation-unit nil (~ret) (~(/ delta 1000000000.0))))
+          `(:compilation-result nil ~(pr-str ret) ~(/ delta 1000000000.0)))
         (catch Throwable t
           (let [delta (- (System/nanoTime) start)
                 causes (exception-causes t)
                 num (count causes)]
-            `(:swank-compilation-unit
+            `(:compilation-result
               ~(map exception-to-message causes) ;; notes
-              ~(take num (repeat nil)) ;; results
-              ~(take num (repeat (/ delta 1000000000.0))) ;; durations
+              nil ;; results
+              ~(/ delta 1000000000.0) ;; durations
               )))))))
 
 (defslimefn compile-file-for-emacs
@@ -122,7 +122,7 @@
   (let [start (System/nanoTime)
         ret (with-emacs-package (eval-region string))
         delta (- (System/nanoTime) start)]
-    `(:swank-compilation-unit nil (~ret) (~(/ delta 1000000000.0)))))
+    `(:compilation-result nil ~(pr-str ret) ~(/ delta 1000000000.0))))
 
 ;;;; Describe
 
