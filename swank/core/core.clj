@@ -84,8 +84,8 @@
        (map str (.getStackTrace t))))
 
 (def *debug-thread-id*)
-(defn invoke-debugger [thrown id]
-  (dothread-keeping [*out* *ns* *current-connection* *warn-on-reflection*]
+(defn invoke-debugger [#^Throwable thrown id]
+  (dothread-keeping [*out* *ns* *current-connection* *warn-on-reflection* *e]
     (thread-set-name "Swank Debugger Thread")
     (binding [*current-exception* thrown
               *debug-thread-id* id]
@@ -119,6 +119,8 @@
        ;; swank function not defined, abort
        (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id))))
    (catch Throwable t
+     (set! *e t)
+     ;; (.printStackTrace t #^java.io.PrintWriter *err*)
      ;; Throwing to top level, let emacs know we're aborting
      (when (debug-quit-exception? t)
        (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id))
@@ -133,7 +135,7 @@
   "Spawn an thread that blocks for a single command from the control
    thread, executes it, then terminates."
   ([conn]
-     (dothread-keeping [*out* *ns* *current-connection* *1 *2 *3 *warn-on-reflection*]
+     (dothread-keeping [*out* *ns* *current-connection* *1 *2 *3 *e *warn-on-reflection*]
        (thread-set-name "Swank Worker Thread")
        (eval-from-control))))
 
@@ -141,7 +143,7 @@
   "Spawn an thread that sets itself as the current
    connection's :repl-thread and then enters an eval-loop"
   ([conn]
-     (dothread-keeping [*out* *ns* *1 *2 *3 *warn-on-reflection*]
+     (dothread-keeping [*out* *ns* *1 *2 *3 *e *warn-on-reflection*]
        (thread-set-name "Swank REPL Thread")
        (with-connection conn
          (eval-loop)))))
@@ -207,6 +209,6 @@
    it (will block if no mbox control message is available). This is
    intended to only be run on the control thread."
   ([conn]
-     (binding [*1 nil, *2 nil, *3 nil]
+     (binding [*1 nil, *2 nil, *3 nil, *e nil]
        (with-connection conn
          (continuously (dispatch-event (mb/receive (current-thread)) conn))))))
