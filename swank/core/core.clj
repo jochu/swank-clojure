@@ -96,12 +96,17 @@
         (debug-loop)
         (send-to-emacs (list :debug-return (current-thread) level nil))))))
 
+(defn doall-seq [coll]
+  (if (seq? coll)
+    (doall coll)
+    coll))
+
 (defn eval-for-emacs [form buffer-package id]
   (try
    (binding [*current-package* buffer-package]
      (if-let f (slime-fn (first form))
        (let [form (cons f (rest form))
-             result (doall (eval-in-emacs-package form))]
+             result (doall-seq (eval-in-emacs-package form))]
          (run-hook *pre-reply-hook*)
          (send-to-emacs `(:return ~(thread-name (current-thread)) (:ok ~result) ~id)))
        ;; swank function not defined, abort
