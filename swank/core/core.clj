@@ -78,6 +78,11 @@
          (when-not (debug-quit-exception? t)
            (throw t))))))
 
+(defn exception-stacktrace [#^Throwable t]
+  (map #(list %1 %2 '(:restartable nil))
+       (iterate inc 0)
+       (map str (.getStackTrace t))))
+
 (defn invoke-debugger [thrown id]
   (dothread-keeping [*out* *ns* *current-connection* *warn-on-reflection*]
     (thread-set-name "Swank Debugger Thread")
@@ -89,7 +94,7 @@
             options `(("ABORT" "Return to SLIME's top level.")
                       ~@(when-let cause (.getCause thrown)
                           '(("CAUSE" "Throw cause of this exception"))))
-            error-stack (map list (iterate inc 0) (map str (.getStackTrace thrown)))
+            error-stack (exception-stacktrace thrown)
             continuations (list id)]
         (send-to-emacs (list :debug (current-thread) level message options error-stack continuations))
         (send-to-emacs (list :debug-activate (current-thread) level true))

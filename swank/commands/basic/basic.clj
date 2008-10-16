@@ -312,8 +312,11 @@
     (throw (.getCause *current-exception*))
     (throw (swank.core.DebugQuitException. "Nth restart"))))
 
+(defslimefn backtrace [start end]
+  (.printStackTrace *current-exception*)
+  (doall (take (- end start) (drop start (exception-stacktrace *current-exception*)))))
+
 (defslimefn buffer-first-change [file-name] nil)
 
-(defslimefn backtrace [start end] nil)
 (defslimefn frame-catch-tags-for-emacs [n] nil)
 (defslimefn frame-locals-for-emacs [n] nil)
