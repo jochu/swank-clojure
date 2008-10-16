@@ -115,6 +115,7 @@ swank-clojure-java-path) if non-nil."
     (modify-syntax-entry ?\[ "(]")
     (modify-syntax-entry ?\] ")[")
     (modify-syntax-entry ?^ "'")
+    (modify-syntax-entry ?= "'")
 
     ;; set indentation function (already local)
     (setq lisp-indent-function 'clojure-indent-function)
