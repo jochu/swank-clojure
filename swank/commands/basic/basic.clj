@@ -309,11 +309,12 @@
 
 (defslimefn invoke-nth-restart-for-emacs [level n]
   (if (= n 1)
-    (throw (.getCause *current-exception*))
+    (let [cause (.getCause *current-exception*)]
+      (invoke-debugger cause *debug-thread-id*)
+      (.getMessage cause))
     (throw (swank.core.DebugQuitException. "Nth restart"))))
 
 (defslimefn backtrace [start end]
-  (.printStackTrace *current-exception*)
   (doall (take (- end start) (drop start (exception-stacktrace *current-exception*)))))
 
 (defslimefn buffer-first-change [file-name] nil)

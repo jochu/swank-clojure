@@ -83,10 +83,12 @@
        (iterate inc 0)
        (map str (.getStackTrace t))))
 
+(def *debug-thread-id*)
 (defn invoke-debugger [thrown id]
   (dothread-keeping [*out* *ns* *current-connection* *warn-on-reflection*]
     (thread-set-name "Swank Debugger Thread")
-    (binding [*current-exception* thrown]
+    (binding [*current-exception* thrown
+              *debug-thread-id* id]
       (let [level 1
             message (list (or (.getMessage thrown) "No message.")
                           (str "  [Thrown " (class thrown) "]")
