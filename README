@@ -15,8 +15,10 @@ Installation
   3. Customize the path to your clojure jar file. Optionally, also
      customize other classpath information. [3]
 
-       ;; place before (require 'swank-clojure-autoload)       
-       (setq swank-clojure-jar-path "/path/to/clojure.jar")
+       (require 'swank-clojure-autoload)       
+       (swank-clojure-config
+         (setq swank-clojure-jar-path "/path/to/clojure.jar")
+         (setq swank-clojure-extra-classpaths (list "/path/to/extra/classpaths")))
 
          or
 
