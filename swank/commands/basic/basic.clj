@@ -52,6 +52,13 @@
         (set! *1 value))
       (send-repl-results-to-emacs value)))))
 
+(defslimefn eval-and-grab-output [string]
+  (with-emacs-package
+    (with-local-vars [retval nil]
+      (list (with-out-str
+              (var-set retval (pr-str (first (eval-region string)))))
+            (var-get retval)))))
+
 ;;;; Macro expansion
 
 (defn- apply-macro-expander [expander string]
