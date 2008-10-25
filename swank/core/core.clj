@@ -143,7 +143,8 @@
   "Spawn an thread that sets itself as the current
    connection's :repl-thread and then enters an eval-loop"
   ([conn]
-     (dothread-keeping [*out* *ns* *1 *2 *3 *e *warn-on-reflection*]
+     (dothread-keeping [*out* *ns* *1 *2 *3 *e *warn-on-reflection*
+                        *print-level* *print-length*]
        (thread-set-name "Swank REPL Thread")
        (with-connection conn
          (eval-loop)))))
