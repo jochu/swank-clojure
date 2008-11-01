@@ -18,7 +18,7 @@
     :version ~(deref *protocol-version*)))
 
 (defslimefn quit-lisp []
-  (.exit System 0))
+  (System/exit 0))
 
 ;;;; Evaluation
 
@@ -26,7 +26,7 @@
   "Evaluate string, return the results of the last form as a list and
    a secondary value the last form."
   ([string]
-     (with-open rdr (new LineNumberingPushbackReader (new StringReader string))
+     (with-open rdr (LineNumberingPushbackReader. (StringReader. string))
        (loop [form (read rdr false rdr), value nil, last-form nil]
          (if (= form rdr)
            [value last-form]
@@ -177,29 +177,18 @@
       :else nil))
    (catch Throwable t nil)))
 
-
-
 ;;;; Completions
-
 
 (defn- vars-with-prefix
   "Filters a coll of vars and returns only those that have a given
    prefix."
   ([#^String prefix vars]
-     (let [matches-prefix?
-           (fn matches-prefix? [#^String s]
-             (and s (not= 0 (.length s)) (.startsWith s prefix)))]
-       (filter matches-prefix? (map (comp str :name meta) vars)))))
+     (filter #(.startsWith % prefix) (map (comp name :name meta) vars))))
 
 (defn- largest-common-prefix
   "Returns the largest common prefix of two strings."
   ([#^String a #^String b]
-     (let [limit (min (.length a) (.length b))]
-       (loop [i 0]
-         (if (or (= i limit)
-                 (not= (.charAt a i) (.charAt b i)))
-           (.substring a 0 i)
-           (recur (inc i))))))
+     (apply str (take-while (comp not nil?) (map #(when (= %1 %2) %1) a b))))
   {:tag String})
 
 (defn- symbol-name-parts
@@ -213,15 +202,16 @@
          [default-ns symbol] 
          [(.substring symbol 0 ns-pos) (.substring symbol (inc ns-pos))]))))
 
-(defn- maybe-alias [sym pkg]
+(defn- maybe-alias [sym ns]
   (or (find-ns sym)
-      (get (ns-aliases (maybe-ns pkg)) sym)))
+      (get (ns-aliases (maybe-ns ns)) sym)
+      (maybe-ns ns)))
 
 (defslimefn simple-completions [symbol-string package]
   (try
    (let [[sym-ns sym-name] (symbol-name-parts symbol-string)
          ns (if sym-ns (maybe-alias (symbol sym-ns) package) (maybe-ns package))
-         vars (vals (if sym-ns (ns-publics ns) (ns-map ns)))
+         vars (if sym-ns (vals (ns-publics ns)) (filter var? (vals (ns-map ns))))
          matches (sort (vars-with-prefix sym-name vars))]
      (if sym-ns
        (list (map (partial str sym-ns "/") matches)
@@ -273,26 +263,24 @@
   (let [f (File. file)]
     (if (.isAbsolute f)
       `(:file ~file)
-      (first (filter identity (map (partial slime-find-file-in-dir f) paths))))))
+      (first (filter identity (map #(slime-find-file-in-dir f %) paths))))))
 
 (defn- get-path-prop
-  "Returns a coll of paths within a property"
+  "Returns a coll of the paths represented in a system property"
   ([prop]
-     (seq (.. System
-              (getProperty prop)
-              (split File/pathSeparator)))))
+     (seq (-> (System/getProperty prop)
+              (.split File/pathSeparator))))
+  ([prop & props]
+     (lazy-cat (get-path-prop prop) (mapcat get-path-prop props))))
 
 (defn- slime-search-paths []
-  (concat (get-path-prop "user.dir")
-          (get-path-prop "java.class.path")
-          (get-path-prop "sun.boot.class.path")
-          (map #(.getPath %) (seq (.getURLs (.ROOT_CLASSLOADER clojure.lang.RT))))))
+  (concat (get-path-prop "user.dir" "java.class.path" "sun.boot.class.path")
+          (map #(.getPath %) (.getURLs clojure.lang.RT/ROOT_CLASSLOADER))))
 
 (defn- namespace-to-path [ns]
-  (.. (ns-name ns)
-      toString
-      (replace \- \_)
-      (replace \. \/)))
+  (-> (name (ns-name ns))
+      (.replace \- \_)
+      (.replace \. \/)))
 
 (defslimefn find-definitions-for-emacs [name]
   (let [sym-name (read-from-string name)
