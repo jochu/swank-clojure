@@ -32,9 +32,7 @@
          (send-to-emacs `(:new-package ~(str (ns-name *ns*)) ~(str (ns-name *ns*)))))))))
 
 (defmacro dothread-swank [& body]
-  `(dothread-keeping [*out* *ns* *current-connection*
-                      *1 *2 *3 *e
-                      *warn-on-reflection* *print-level* *print-length*]
+  `(dothread-keeping-clj [*current-connection*]
      ~@body))
 
 ;; Exceptions for debugging

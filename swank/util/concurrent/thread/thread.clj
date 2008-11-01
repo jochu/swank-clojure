@@ -16,6 +16,12 @@
 (defmacro dothread-keeping [bindings & body]
   `(start-thread (keep-bindings ~bindings (fn [] ~@body))))
 
+(defmacro dothread-keeping-clj [more-bindings & body]
+  (let [clj-star-syms (filter #(.startsWith (name %) "*")
+                              (keys (ns-publics (find-ns 'clojure))))]
+    `(dothread-keeping [~@clj-star-syms ~@more-bindings]
+       ~@body)))
+
 (defn current-thread []
   (Thread/currentThread))
 
