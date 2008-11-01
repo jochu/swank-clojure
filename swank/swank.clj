@@ -22,11 +22,11 @@
 
 (defn- connection-serve [conn]
   (let [control
-        (dothread-keeping [*out* *ns* *current-connection* *warn-on-reflection*]
+        (dothread-swank
           (thread-set-name "Swank Control Thread")
           (control-loop conn))
         read
-        (dothread-keeping [*out* *ns* *current-connection* *warn-on-reflection*]
+        (dothread-swank
           (thread-set-name "Read Loop Thread")
           (read-loop conn control))]
     (dosync

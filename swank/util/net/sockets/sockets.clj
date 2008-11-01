@@ -5,7 +5,8 @@
 
 (defn socket-server [port handle-socket]
   (returning server (ServerSocket. port)
-    (dothread-keeping [*ns* *out* *warn-on-reflection*]
+    (dothread-keeping [*out* *ns* *1 *2 *3 *e
+                       *warn-on-reflection* *print-level* *print-length*]
       (thread-set-name (str "Server " port " [" (thread-id) "]"))
       (with-open server server
         (loop []

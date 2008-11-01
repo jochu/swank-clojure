@@ -31,6 +31,12 @@
        (when-not (= last-ns# *ns*)
          (send-to-emacs `(:new-package ~(str (ns-name *ns*)) ~(str (ns-name *ns*)))))))))
 
+(defmacro dothread-swank [& body]
+  `(dothread-keeping [*out* *ns* *current-connection*
+                      *1 *2 *3 *e
+                      *warn-on-reflection* *print-level* *print-length*]
+     ~@body))
+
 ;; Exceptions for debugging
 (defexception swank.core.DebugQuitException)
 (def *current-exception*)
@@ -85,23 +91,23 @@
 
 (def *debug-thread-id*)
 (defn invoke-debugger [#^Throwable thrown id]
-  (dothread-keeping [*out* *ns* *current-connection* *warn-on-reflection* *e]
-    (thread-set-name "Swank Debugger Thread")
-    (binding [*current-exception* thrown
-              *debug-thread-id* id]
-      (let [level 1
-            message (list (or (.getMessage thrown) "No message.")
-                          (str "  [Thrown " (class thrown) "]")
-                          nil)
-            options `(("ABORT" "Return to SLIME's top level.")
-                      ~@(when-let cause (.getCause thrown)
-                          '(("CAUSE" "Throw cause of this exception"))))
-            error-stack (exception-stacktrace thrown)
-            continuations (list id)]
-        (send-to-emacs (list :debug (current-thread) level message options error-stack continuations))
-        (send-to-emacs (list :debug-activate (current-thread) level true))
-        (debug-loop)
-        (send-to-emacs (list :debug-return (current-thread) level nil))))))
+  (dothread-swank
+   (thread-set-name "Swank Debugger Thread")
+   (binding [*current-exception* thrown
+             *debug-thread-id* id]
+     (let [level 1
+           message (list (or (.getMessage thrown) "No message.")
+                         (str "  [Thrown " (class thrown) "]")
+                         nil)
+           options `(("ABORT" "Return to SLIME's top level.")
+                     ~@(when-let cause (.getCause thrown)
+                         '(("CAUSE" "Throw cause of this exception"))))
+           error-stack (exception-stacktrace thrown)
+           continuations (list id)]
+       (send-to-emacs (list :debug (current-thread) level message options error-stack continuations))
+       (send-to-emacs (list :debug-activate (current-thread) level true))
+       (debug-loop)
+       (send-to-emacs (list :debug-return (current-thread) level nil))))))
 
 (defn doall-seq [coll]
   (if (seq? coll)
@@ -135,19 +141,18 @@
   "Spawn an thread that blocks for a single command from the control
    thread, executes it, then terminates."
   ([conn]
-     (dothread-keeping [*out* *ns* *current-connection* *1 *2 *3 *e *warn-on-reflection*]
-       (thread-set-name "Swank Worker Thread")
-       (eval-from-control))))
+     (dothread-swank
+      (thread-set-name "Swank Worker Thread")
+      (eval-from-control))))
 
 (defn spawn-repl-thread
   "Spawn an thread that sets itself as the current
    connection's :repl-thread and then enters an eval-loop"
   ([conn]
-     (dothread-keeping [*out* *ns* *1 *2 *3 *e *warn-on-reflection*
-                        *print-level* *print-length*]
-       (thread-set-name "Swank REPL Thread")
-       (with-connection conn
-         (eval-loop)))))
+     (dothread-swank
+      (thread-set-name "Swank REPL Thread")
+      (with-connection conn
+        (eval-loop)))))
 
 (defn find-or-spawn-repl-thread
   "Returns the current connection's repl-thread or create a new one if
