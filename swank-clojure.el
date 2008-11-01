@@ -96,7 +96,7 @@ will be used over paths too.)"
       (delete-if
        'null
        (append
-        (list (expand-file-name swank-clojure-java-path))
+        (list swank-clojure-java-path)
         swank-clojure-extra-vm-args
         (list
          (when swank-clojure-library-paths
