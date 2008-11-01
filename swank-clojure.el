@@ -80,7 +80,7 @@ swank-clojure-java-path) if non-nil."
 (defun swank-clojure-update-indentation (sym indent)
   (put sym 'clojure-indent-function indent))
 
-(defun concat-paths (paths)
+(defun swank-clojure-concat-paths (paths)
   "Concatenate given list of `paths' using `path-separator'. (`expand-file-name'
 will be used over paths too.)"
   (mapconcat 'identity (mapcar 'expand-file-name paths) path-separator))
@@ -92,20 +92,20 @@ will be used over paths too.)"
           swank-clojure-binary
         (list swank-clojure-binary))
     (if (not swank-clojure-jar-path)
-	(error "You must specify a `swank-clojure-jar-path'")
+        (error "You must specify a `swank-clojure-jar-path'")
       (delete-if
        'null
        (append
-	(list (expand-file-name swank-clojure-java-path))
-	swank-clojure-extra-vm-args
-	(list
-	 (when swank-clojure-library-paths
-	   (concat "-Djava.library.path="
-		   (concat-paths swank-clojure-library-paths)))
-	 "-classpath"
-	 (concat-paths
-	  (cons swank-clojure-jar-path swank-clojure-extra-classpaths))
-	 "clojure.lang.Repl"))))))
+        (list (expand-file-name swank-clojure-java-path))
+        swank-clojure-extra-vm-args
+        (list
+         (when swank-clojure-library-paths
+           (concat "-Djava.library.path="
+                   (swank-clojure-concat-paths swank-clojure-library-paths)))
+         "-classpath"
+         (swank-clojure-concat-paths
+          (cons swank-clojure-jar-path swank-clojure-extra-classpaths))
+         "clojure.lang.Repl"))))))
 
 ;; Change the repl to be more clojure friendly
 (defun swank-clojure-slime-repl-modify-syntax ()
