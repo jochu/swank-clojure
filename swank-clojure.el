@@ -32,7 +32,7 @@ to load the supporting clojure library swank."))
   :type 'string
   :group 'swank-clojure)
 
-(defcustom swank-clojure-extra-classpaths (directory-files "~/.clojure" t ".jar$")
+(defcustom swank-clojure-extra-classpaths (when (file-directory-p "~/.clojure") (directory-files "~/.clojure" t ".jar$"))
   "The classpath from which clojure will load from (passed into
 java as the -cp argument). On default, it includes all jar files
 within ~/.clojure/"
