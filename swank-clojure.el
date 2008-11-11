@@ -32,7 +32,7 @@ to load the supporting clojure library swank."))
   :type 'string
   :group 'swank-clojure)
 
-(defcustom swank-clojure-extra-classpaths (list (file-truename "~/.clojure/*"))
+(defcustom swank-clojure-extra-classpaths (when (file-directory-p "~/.clojure") (directory-files "~/.clojure" t ".jar$"))
   "The classpath from which clojure will load from (passed into
 java as the -cp argument). On default, it includes all jar files
 within ~/.clojure/"
@@ -64,7 +64,7 @@ swank-clojure-java-path) if non-nil."
           `(clojure/require 'swank)
           (when (boundp 'slime-protocol-version)
             `(swank/ignore-protocol-version ,slime-protocol-version))
-          `(swank/start-server ,file)))
+          `(swank/start-server ,file :encoding ,(format "%s" encoding))))
 
 (defun swank-clojure-find-package ()
   (let ((regexp "^(\\(clojure/\\)?\\(in-\\)?ns\\s-+[:']?\\(.*\\>\\)"))
@@ -80,29 +80,32 @@ swank-clojure-java-path) if non-nil."
 (defun swank-clojure-update-indentation (sym indent)
   (put sym 'clojure-indent-function indent))
 
+(defun swank-clojure-concat-paths (paths)
+  "Concatenate given list of `paths' using `path-separator'. (`expand-file-name'
+will be used over paths too.)"
+  (mapconcat 'identity (mapcar 'expand-file-name paths) path-separator))
+
 (defun swank-clojure-cmd ()
-  "Create the command to start clojure based off of current configuration settings"
+  "Create the command to start clojure according to current settings."
   (if swank-clojure-binary
       (if (listp swank-clojure-binary)
           swank-clojure-binary
         (list swank-clojure-binary))
     (if (not swank-clojure-jar-path)
-        (error "Error: You must specify a swank-clojure-jar-path. Please see README of swank-clojure.")
-        (delete-if (lambda (x) (null x))
-                   (cons swank-clojure-java-path
-                         (append swank-clojure-extra-vm-args
-                                 (list (if swank-clojure-library-paths
-                                           (concat "-Djava.library.path="
-                                                   (mapconcat 'identity
-                                                              swank-clojure-library-paths
-                                                              path-separator))
-                                         nil)
-                                       "-cp"
-                                       (mapconcat 'identity
-                                                  (cons swank-clojure-jar-path
-                                                        swank-clojure-extra-classpaths)
-                                                  path-separator)
-                                       "clojure.lang.Repl")))))))
+        (error "You must specify a `swank-clojure-jar-path'")
+      (delete-if
+       'null
+       (append
+        (list swank-clojure-java-path)
+        swank-clojure-extra-vm-args
+        (list
+         (when swank-clojure-library-paths
+           (concat "-Djava.library.path="
+                   (swank-clojure-concat-paths swank-clojure-library-paths)))
+         "-classpath"
+         (swank-clojure-concat-paths
+          (cons swank-clojure-jar-path swank-clojure-extra-classpaths))
+         "clojure.lang.Repl"))))))
 
 ;; Change the repl to be more clojure friendly
 (defun swank-clojure-slime-repl-modify-syntax ()
@@ -115,6 +118,7 @@ swank-clojure-java-path) if non-nil."
     (modify-syntax-entry ?\[ "(]")
     (modify-syntax-entry ?\] ")[")
     (modify-syntax-entry ?^ "'")
+    (modify-syntax-entry ?= "'")
 
     ;; set indentation function (already local)
     (setq lisp-indent-function 'clojure-indent-function)

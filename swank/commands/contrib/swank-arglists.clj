@@ -15,9 +15,11 @@
 
 (defslimefn variable-desc-for-echo-area [variable-name]
   (with-emacs-package
-   (or
-    (when-let sym (read-from-string variable-name)
-      (when-let var (resolve sym)
-        (when (. var isBound)
-          (str variable-name " => " (var-get var)))))
+   (or 
+    (try
+     (when-let sym (read-from-string variable-name)
+       (when-let var (resolve sym)
+         (when (. var isBound)
+           (str variable-name " => " (var-get var)))))
+     (catch Exception e nil))
     "")))

@@ -18,7 +18,7 @@
     :version ~(deref *protocol-version*)))
 
 (defslimefn quit-lisp []
-  (.exit System 0))
+  (System/exit 0))
 
 ;;;; Evaluation
 
@@ -26,7 +26,7 @@
   "Evaluate string, return the results of the last form as a list and
    a secondary value the last form."
   ([string]
-     (with-open rdr (new LineNumberingPushbackReader (new StringReader string))
+     (with-open rdr (LineNumberingPushbackReader. (StringReader. string))
        (loop [form (read rdr false rdr), value nil, last-form nil]
          (if (= form rdr)
            [value last-form]
@@ -40,14 +40,24 @@
 
 (defslimefn interactive-eval [string]
   (with-emacs-package
-   (let [result (eval (read-from-string string))]
-     (pr-str (first (eval-region string))))))
+    (pr-str (first (eval-region string)))))
 
 (defslimefn listener-eval [form]
   (with-emacs-package
    (with-package-tracking
     (let [[value last-form] (eval-region form)]
+      (when (and last-form (not (one-of? last-form '*1 '*2 '*3 '*e)))
+        (set! *3 *2)
+        (set! *2 *1)
+        (set! *1 value))
       (send-repl-results-to-emacs value)))))
+
+(defslimefn eval-and-grab-output [string]
+  (with-emacs-package
+    (with-local-vars [retval nil]
+      (list (with-out-str
+              (var-set retval (pr-str (first (eval-region string)))))
+            (var-get retval)))))
 
 ;;;; Macro expansion
 
@@ -100,15 +110,16 @@
        (try
         (let [ret (clojure/load-file file-name)
               delta (- (System/nanoTime) start)]
-          `(:swank-compilation-unit nil (~ret) (~(/ delta 1000000000.0))))
+          `(:compilation-result nil ~(pr-str ret) ~(/ delta 1000000000.0)))
         (catch Throwable t
           (let [delta (- (System/nanoTime) start)
                 causes (exception-causes t)
                 num (count causes)]
-            `(:swank-compilation-unit
+            (.printStackTrace t) ;; prints to *inferior-lisp*
+            `(:compilation-result
               ~(map exception-to-message causes) ;; notes
-              ~(take num (repeat nil)) ;; results
-              ~(take num (repeat (/ delta 1000000000.0))) ;; durations
+              nil ;; results
+              ~(/ delta 1000000000.0) ;; durations
               )))))))
 
 (defslimefn compile-file-for-emacs
@@ -118,6 +129,12 @@
 
 (defslimefn load-file [file-name]
   (pr-str (clojure/load-file file-name)))
+
+(defslimefn compile-string-for-emacs [string buffer position directory debug]
+  (let [start (System/nanoTime)
+        ret (with-emacs-package (eval-region string))
+        delta (- (System/nanoTime) start)]
+    `(:compilation-result nil ~(pr-str ret) ~(/ delta 1000000000.0))))
 
 ;;;; Describe
 
@@ -160,29 +177,18 @@
       :else nil))
    (catch Throwable t nil)))
 
-
-
 ;;;; Completions
-
 
 (defn- vars-with-prefix
   "Filters a coll of vars and returns only those that have a given
    prefix."
   ([#^String prefix vars]
-     (let [matches-prefix?
-           (fn matches-prefix? [#^String s]
-             (and s (not= 0 (.length s)) (.startsWith s prefix)))]
-       (filter matches-prefix? (map (comp str :name meta) vars)))))
+     (filter #(.startsWith % prefix) (map (comp name :name meta) vars))))
 
 (defn- largest-common-prefix
   "Returns the largest common prefix of two strings."
   ([#^String a #^String b]
-     (let [limit (min (.length a) (.length b))]
-       (loop [i 0]
-         (if (or (= i limit)
-                 (not= (.charAt a i) (.charAt b i)))
-           (.substring a 0 i)
-           (recur (inc i))))))
+     (apply str (take-while (comp not nil?) (map #(when (= %1 %2) %1) a b))))
   {:tag String})
 
 (defn- symbol-name-parts
@@ -196,15 +202,16 @@
          [default-ns symbol] 
          [(.substring symbol 0 ns-pos) (.substring symbol (inc ns-pos))]))))
 
-(defn- maybe-alias [sym pkg]
+(defn- maybe-alias [sym ns]
   (or (find-ns sym)
-      (get (ns-aliases (maybe-ns pkg)) sym)))
+      (get (ns-aliases (maybe-ns ns)) sym)
+      (maybe-ns ns)))
 
 (defslimefn simple-completions [symbol-string package]
   (try
    (let [[sym-ns sym-name] (symbol-name-parts symbol-string)
          ns (if sym-ns (maybe-alias (symbol sym-ns) package) (maybe-ns package))
-         vars (vals (if sym-ns (ns-publics ns) (ns-map ns)))
+         vars (if sym-ns (vals (ns-publics ns)) (filter var? (vals (ns-map ns))))
          matches (sort (vars-with-prefix sym-name vars))]
      (if sym-ns
        (list (map (partial str sym-ns "/") matches)
@@ -256,26 +263,24 @@
   (let [f (File. file)]
     (if (.isAbsolute f)
       `(:file ~file)
-      (first (filter identity (map (partial slime-find-file-in-dir f) paths))))))
+      (first (filter identity (map #(slime-find-file-in-dir f %) paths))))))
 
 (defn- get-path-prop
-  "Returns a coll of paths within a property"
+  "Returns a coll of the paths represented in a system property"
   ([prop]
-     (seq (.. System
-              (getProperty prop)
-              (split File/pathSeparator)))))
+     (seq (-> (System/getProperty prop)
+              (.split File/pathSeparator))))
+  ([prop & props]
+     (lazy-cat (get-path-prop prop) (mapcat get-path-prop props))))
 
 (defn- slime-search-paths []
-  (concat (get-path-prop "user.dir")
-          (get-path-prop "java.class.path")
-          (get-path-prop "sun.boot.class.path")
-          (map #(.getPath %) (seq (.getURLs (.ROOT_CLASSLOADER clojure.lang.RT))))))
+  (concat (get-path-prop "user.dir" "java.class.path" "sun.boot.class.path")
+          (map #(.getPath %) (.getURLs clojure.lang.RT/ROOT_CLASSLOADER))))
 
 (defn- namespace-to-path [ns]
-  (.. (ns-name ns)
-      toString
-      (replace \- \_)
-      (replace \. \/)))
+  (-> (name (ns-name ns))
+      (.replace \- \_)
+      (.replace \. \/)))
 
 (defslimefn find-definitions-for-emacs [name]
   (let [sym-name (read-from-string name)
@@ -299,11 +304,15 @@
 
 (defslimefn invoke-nth-restart-for-emacs [level n]
   (if (= n 1)
-    (throw (.getCause *current-exception*))
+    (let [cause (.getCause *current-exception*)]
+      (invoke-debugger cause *debug-thread-id*)
+      (.getMessage cause))
     (throw (swank.core.DebugQuitException. "Nth restart"))))
+
+(defslimefn backtrace [start end]
+  (doall (take (- end start) (drop start (exception-stacktrace *current-exception*)))))
 
 (defslimefn buffer-first-change [file-name] nil)
 
-(defslimefn backtrace [start end] nil)
 (defslimefn frame-catch-tags-for-emacs [n] nil)
 (defslimefn frame-locals-for-emacs [n] nil)
