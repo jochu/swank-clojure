@@ -108,7 +108,7 @@
   ([file-name]
      (let [start (System/nanoTime)]
        (try
-        (let [ret (clojure/load-file file-name)
+        (let [ret (clojure.core/load-file file-name)
               delta (- (System/nanoTime) start)]
           `(:compilation-result nil ~(pr-str ret) ~(/ delta 1000000000.0)))
         (catch Throwable t
@@ -128,7 +128,7 @@
        (compile-file-for-emacs* file-name))))
 
 (defslimefn load-file [file-name]
-  (pr-str (clojure/load-file file-name)))
+  (pr-str (clojure.core/load-file file-name)))
 
 (defslimefn compile-string-for-emacs [string buffer position directory debug]
   (let [start (System/nanoTime)
