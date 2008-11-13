@@ -1,4 +1,5 @@
-(in-ns 'swank.commands.contrib)
+(ns swank.commands.contrib.swank-arglists
+  (:use (swank util core commands)))
 
 ((slime-fn 'swank-require) :swank-c-p-c)
 
