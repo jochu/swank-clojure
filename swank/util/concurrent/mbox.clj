@@ -1,4 +1,4 @@
-(clojure/ns swank.util.concurrent.mbox
+(ns swank.util.concurrent.mbox
   (:refer-clojure :exclude [send get]))
 
 ;; Holds references to the mailboxes (message queues)

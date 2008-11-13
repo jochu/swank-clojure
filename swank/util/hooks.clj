@@ -1,4 +1,4 @@
-(clojure/ns swank.util.hooks)
+(ns swank.util.hooks)
 
 (defmacro defhook [name & hooks]
   `(def ~name (ref (list ~@hooks))))

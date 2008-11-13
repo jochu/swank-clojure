@@ -1,4 +1,4 @@
-(clojure/ns swank.util.sys)
+(ns swank.util.sys)
 
 (defn get-pid
   "Returns the PID of the JVM. This may or may not be accurate

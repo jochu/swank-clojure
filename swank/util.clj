@@ -1,4 +1,4 @@
-(clojure/ns swank.util
+(ns swank.util
   (:import (java.io StringReader)
            (clojure.lang LineNumberingPushbackReader)))
 

@@ -1,4 +1,4 @@
-(clojure/ns swank.util.net.sockets
+(ns swank.util.net.sockets
   (:use (swank util)
         (swank.util.concurrent thread))
   (:import (java.net ServerSocket Socket InetAddress)))

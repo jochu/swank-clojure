@@ -1,4 +1,4 @@
-(clojure/ns swank.util.io
+(ns swank.util.io
   (:use (swank util)
         (swank.util.concurrent thread)))
 
