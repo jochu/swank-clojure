@@ -4,7 +4,7 @@
 
 (defn read-chars [n #^java.io.Reader rdr]
   (let [sb (StringBuilder.)]
-    (dotimes i n
+    (dotimes [i n]
       (let [c (.read rdr)]
         (when (not= c -1)
           (.append sb (char c)))))

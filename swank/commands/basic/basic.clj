@@ -26,7 +26,7 @@
   "Evaluate string, return the results of the last form as a list and
    a secondary value the last form."
   ([string]
-     (with-open rdr (LineNumberingPushbackReader. (StringReader. string))
+     (with-open [rdr (LineNumberingPushbackReader. (StringReader. string))]
        (loop [form (read rdr false rdr), value nil, last-form nil]
          (if (= form rdr)
            [value last-form]
@@ -97,7 +97,7 @@
              :short-message ~(.toString t)))
 
 (defn- exception-causes [#^Throwable t]
-  (lazy-cons t (when-let cause (.getCause t)
+  (lazy-cons t (when-let [cause (.getCause t)]
                  (exception-causes cause))))
 
 (defn- compile-file-for-emacs*
@@ -144,7 +144,7 @@
 
 (defn- describe-symbol* [symbol-name]
   (with-emacs-package
-   (if-let v (ns-resolve (maybe-ns *current-package*) (symbol symbol-name))
+   (if-let [v (ns-resolve (maybe-ns *current-package*) (symbol symbol-name))]
      (describe-to-string v)
      (str "Unknown symbol " symbol-name))))
 
@@ -171,7 +171,7 @@
      (cond
       (keyword? f) "([map])"
       (symbol? f) (let [var (ns-resolve (maybe-ns package) f)]
-                    (if-let args (and var (:arglists (meta var)))
+                    (if-let [args (and var (:arglists (meta var)))]
                       (pr-str args)
                       nil))
       :else nil))
@@ -285,11 +285,11 @@
 (defslimefn find-definitions-for-emacs [name]
   (let [sym-name (read-from-string name)
         sym-var (ns-resolve (maybe-ns *current-package*) sym-name)]
-    (when-let meta (and sym-var (meta sym-var))
-      (if-let path (or (slime-find-file-in-paths (str (namespace-to-path (:ns meta))
-                                                      (.separator File)
-                                                      (:file meta)) (slime-search-paths))
-                       (slime-find-file-in-paths (:file meta) (slime-search-paths)))
+    (when-let [meta (and sym-var (meta sym-var))]
+        (if-let [path (or (slime-find-file-in-paths (str (namespace-to-path (:ns meta))
+                                                          (.separator File)
+                                                          (:file meta)) (slime-search-paths))
+                           (slime-find-file-in-paths (:file meta) (slime-search-paths)))]
         `((~(str "(defn " (:name meta) ")")
            (:location
             ~path

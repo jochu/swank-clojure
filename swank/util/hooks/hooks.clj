@@ -8,5 +8,5 @@
   (dosync (alter place conj function)))
 
 (defn run-hook [functions & arguments]
-  (doseq f @functions
+  (doseq [f @functions]
     (apply f arguments)))

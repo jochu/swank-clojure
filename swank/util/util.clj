@@ -79,5 +79,5 @@
   "Reads the next object from a string, throws an exception when form
    cannot be read."
   ([#^String string]
-     (with-open rdr (LineNumberingPushbackReader. (StringReader. string))
+     (with-open [rdr (LineNumberingPushbackReader. (StringReader. string))]
        (read rdr))))
