@@ -17,8 +17,8 @@
   (with-emacs-package
    (or 
     (try
-     (when-let sym (read-from-string variable-name)
-       (when-let var (resolve sym)
+     (when-let [sym (read-from-string variable-name)]
+       (when-let [var (resolve sym)]
          (when (. var isBound)
            (str variable-name " => " (var-get var)))))
      (catch Exception e nil))
