@@ -8,7 +8,7 @@
 ;;; See README file for more information about installation
 ;;;
 
-(clojure/ns swank
+(ns swank
   (:use (swank core)
         (swank.core connection server)
         (swank.util.concurrent thread))

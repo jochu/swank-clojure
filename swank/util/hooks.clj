@@ -1,4 +1,4 @@
-(clojure/ns swank.util.hooks)
+(ns swank.util.hooks)
 
 (defmacro defhook [name & hooks]
   `(def ~name (ref (list ~@hooks))))
@@ -8,5 +8,5 @@
   (dosync (alter place conj function)))
 
 (defn run-hook [functions & arguments]
-  (doseq f @functions
+  (doseq [f @functions]
     (apply f arguments)))

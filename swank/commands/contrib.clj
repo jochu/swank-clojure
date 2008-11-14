@@ -3,7 +3,7 @@
 
 (defslimefn swank-require [keys]
   (binding [*ns* (find-ns 'swank.commands.contrib)]
-    (doseq k (if (seq? keys) keys (list keys))
+    (doseq [k (if (seq? keys) keys (list keys))]
       (try
-       (load (str (name k) ".clj"))
+       (require (symbol (str "swank.commands.contrib." (name k))))
        (catch java.io.FileNotFoundException fne nil)))))

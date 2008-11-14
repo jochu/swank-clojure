@@ -1,10 +1,10 @@
-(clojure/ns swank.util.io
+(ns swank.util.io
   (:use (swank util)
         (swank.util.concurrent thread)))
 
 (defn read-chars [n #^java.io.Reader rdr]
   (let [sb (StringBuilder.)]
-    (dotimes i n
+    (dotimes [i n]
       (let [c (.read rdr)]
         (when (not= c -1)
           (.append sb (char c)))))

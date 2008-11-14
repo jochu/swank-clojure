@@ -1,4 +1,4 @@
-(clojure/ns swank.core.connection
+(ns swank.core.connection
   (:use (swank util)
         (swank.util sys)
         (swank.core protocol))

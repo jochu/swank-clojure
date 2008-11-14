@@ -14,7 +14,7 @@
 (defn- var-indentation [var]
   (flet [(fn indent-loc [meta]
            (or (meta :indent)
-               (when-let arglists (:arglists meta)
+               (when-let [arglists (:arglists meta)]
                  (let [arglist (apply min-key #(or (position '& %1) 0) arglists)
                        amp (position '& arglist)
                        body (position 'body arglist)]
@@ -22,7 +22,7 @@
                               (= (- body amp) 1))
                      amp)))))
          (fn indent-cons [meta]
-           (when-let indent-to (indent-loc meta)
+           (when-let [indent-to (indent-loc meta)]
              (when (or (= indent-to 'defun) (>= indent-to 0))
                `(~(str (:name meta)) . ~indent-to))))]
     (indent-cons (meta var))))
@@ -53,13 +53,13 @@
                 (let [vars (filter (comp var? val) (mapcat ns-map nss))]
                   (mapcat in-cache? vars)))]
          (if force
-           (when-let updates (considerations-for (all-ns))
+           (when-let [updates (considerations-for (all-ns))]
              (dosync (apply alter cache assoc updates))
              (every-other (rest updates)))
            (let [ns (maybe-ns *current-package*)
                  in-ns? (fn [[sym var]] (and (var? var) (= ns ((meta var) :ns))))]
              (when ns
-               (when-let updates (filter identity (considerations-for (list ns)))
+               (when-let [updates (filter identity (considerations-for (list ns)))]
                  (dosync (apply alter cache assoc updates))
                  (every-other (rest updates))))))))))
 

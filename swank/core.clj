@@ -65,7 +65,7 @@
   ([] (continuously (eval-from-control))))
 
 (defn- exception-causes [#^Throwable t]
-  (lazy-cons t (when-let cause (.getCause t)
+  (lazy-cons t (when-let [cause (.getCause t)]
                  (exception-causes cause))))
 
 (defn- debug-quit-exception? [t]
@@ -98,7 +98,7 @@
                          (str "  [Thrown " (class thrown) "]")
                          nil)
            options `(("ABORT" "Return to SLIME's top level.")
-                     ~@(when-let cause (.getCause thrown)
+                     ~@(when-let [cause (.getCause thrown)]
                          '(("CAUSE" "Throw cause of this exception"))))
            error-stack (exception-stacktrace thrown)
            continuations (list id)]
@@ -115,7 +115,7 @@
 (defn eval-for-emacs [form buffer-package id]
   (try
    (binding [*current-package* buffer-package]
-     (if-let f (slime-fn (first form))
+     (if-let [f (slime-fn (first form))]
        (let [form (cons f (rest form))
              result (doall-seq (eval-in-emacs-package form))]
          (run-hook *pre-reply-hook*)

@@ -1,4 +1,5 @@
-(in-ns 'swank.commands.contrib)
+(ns swank.commands.contrib.swank-arglists
+  (:use (swank util core commands)))
 
 ((slime-fn 'swank-require) :swank-c-p-c)
 
@@ -17,8 +18,8 @@
   (with-emacs-package
    (or 
     (try
-     (when-let sym (read-from-string variable-name)
-       (when-let var (resolve sym)
+     (when-let [sym (read-from-string variable-name)]
+       (when-let [var (resolve sym)]
          (when (. var isBound)
            (str variable-name " => " (var-get var)))))
      (catch Exception e nil))

@@ -60,14 +60,14 @@ swank-clojure-java-path) if non-nil."
 
 (defun swank-clojure-init (file encoding)
   (format "%S\n\n%S\n\n%S\n\n%S\n\n"
-          `(clojure/add-classpath ,(concat "file:///" swank-clojure-path))
-          `(clojure/require 'swank)
+          `(add-classpath ,(concat "file:///" swank-clojure-path))
+          `(require 'swank)
           (when (boundp 'slime-protocol-version)
             `(swank/ignore-protocol-version ,slime-protocol-version))
           `(swank/start-server ,file :encoding ,(format "%s" encoding))))
 
 (defun swank-clojure-find-package ()
-  (let ((regexp "^(\\(clojure/\\)?\\(in-\\)?ns\\s-+[:']?\\(.*\\>\\)"))
+  (let ((regexp "^(\\(clojure.core/\\)?\\(in-\\)?ns\\s-+[:']?\\(.*\\>\\)"))
     (save-excursion
       (when (or (re-search-backward regexp nil t)
                 (re-search-forward regexp nil t))
