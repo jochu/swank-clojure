@@ -37,8 +37,8 @@
   "Start the server and write the listen port number to
    PORT-FILE. This is the entry point for Emacs."
   ([port-file & opts]
-     (binding [*warn-on-reflection* true]
-       (let [opts (apply hash-map opts)]
+     (let [opts (apply hash-map opts)]
+       (binding [*warn-on-reflection* (opts :warn-on-reflection false)]
          (setup-server (get opts :port 0)
                        (fn announce-port [port]
                          (announce-port-to-file port-file port)
