@@ -28,12 +28,14 @@
 (defn position
   "Finds the first position of item within col. Returns nil if not
    found."
-  ([item coll]
-     (loop [coll coll, i 0]
-       (when coll
-         (if (= (first coll) item)
-           i
-           (recur (rest coll) (inc i))))))
+  ([item coll & [from]]
+     (let [from (or from 0)]
+       (loop [coll (drop from coll)
+              i from]
+         (if-let [current-item (first coll)]
+             (if (= (first coll) item)
+               i
+               (recur (rest coll) (inc i)))))))
   {:tag Integer})
 
 (defn categorize-by
