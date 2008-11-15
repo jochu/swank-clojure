@@ -12,23 +12,25 @@
   of the corresponding substring in `target' then we call `prefix' a
   compound-prefix of `target'."
   [delimeter,
-   #^String target
-   #^String prefix]
-  (or (= "" prefix)
-      (loop [prefix prefix tpos 0]
-        (let [ch (first prefix)
-              new-tpos (if (= ch delimeter)
-                         (position delimeter target tpos)
-                         tpos)]
-          (when (and tpos
-                     (< tpos (.length target))
-                     (if (not= tpos new-tpos)
-                       new-tpos
-                       (= ch (.charAt target tpos))))
-            (if-let [newprefix (rest prefix)]
-                (recur newprefix
-                       (inc new-tpos))
-              new-tpos))))))
+   #^String prefix,
+   #^String target]
+  (if (= "" prefix)
+    0
+    (loop [prefix prefix
+           tpos 0]
+      (let [ch (first prefix)
+            new-tpos (if (= ch delimeter)
+                       (position delimeter target tpos)
+                       tpos)]
+        (when (and tpos
+                   (< tpos (.length target))
+                   (if (not= tpos new-tpos)
+                     new-tpos
+                     (= ch (.charAt target tpos))))
+          (if-let [newprefix (rest prefix)]
+              (recur newprefix
+                     (inc new-tpos))
+            new-tpos))))))
 
 (defn- symbol-name-parts
   "Parses a symbol name into a namespace and a name. If name doesn't
@@ -37,11 +39,11 @@
   (let [ns-pos (.indexOf symbol (int \/))]
     (cond
      (= ns-pos -1) ;; no slash?
-     [nil symbol nil]
+       [nil symbol nil]
      :else
-     [(.substring symbol 0 ns-pos)
-      (.substring symbol (inc ns-pos))
-      ns-pos])))
+       [(.substring symbol 0 ns-pos)
+        (.substring symbol (inc ns-pos))
+        ns-pos])))
 
 (defn- ns-exists
   "Given an string its-name, returns either an ns if a like named ns
@@ -57,8 +59,8 @@
   is :var, and current-ns is the ns of the context of the completion
   or nil."
   [of-what, #^String sym, & [maybe-ns, current-ns]]
-  (let [maybe-ns (or maybe-ns current-ns)
-        no-ns? (= maybe-ns current-ns)]
+  (let [no-ns? (not maybe-ns)
+        maybe-ns (or maybe-ns current-ns)]
     (cond
      (= :ns of-what)
        (filter (partial compound-prefix-match \. sym)
@@ -71,7 +73,7 @@
               (partial str maybe-ns \/))
             (filter (partial compound-prefix-match \- sym)
                     (map (comp name :name meta)
-                         (filter var? (vals ((if no-ns?
+                         (filter var? (vals ((if (= maybe-ns current-ns)
                                                ns-map
                                                ns-publics)
                                              maybe-ns)))))))))
@@ -83,10 +85,11 @@
   (let [[sym-ns sym-name sym-slash] (symbol-name-parts sym)
         sym-ns (ns-exists sym-ns)
         cur-ns (ns-exists cur-ns)]
+    (prn sym-ns cur-ns sym-name)
     (if sym-ns
       (completion-list :var sym-name sym-ns cur-ns)
       (concat
-       (completion-list :var sym-name cur-ns cur-ns)
+       (completion-list :var sym-name nil cur-ns)
        (map #(str % \/)
             (completion-list :ns sym-name))))))
 
@@ -103,5 +106,6 @@
                         (reduce largest-common-prefix matches)
                         string)]
      (list matches longest-comp))
+   ;; comment the following sexp if debugging completion.
    (catch Throwable e
      (list nil string))))
