@@ -85,7 +85,6 @@
   (let [[sym-ns sym-name sym-slash] (symbol-name-parts sym)
         sym-ns (ns-exists sym-ns)
         cur-ns (ns-exists cur-ns)]
-    (prn sym-ns cur-ns sym-name)
     (if sym-ns
       (completion-list :var sym-name sym-ns cur-ns)
       (concat
