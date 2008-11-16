@@ -278,9 +278,11 @@
           (map #(.getPath %) (.getURLs clojure.lang.RT/ROOT_CLASSLOADER))))
 
 (defn- namespace-to-path [ns]
-  (-> (name (ns-name ns))
-      (.replace \- \_)
-      (.replace \. \/)))
+  (let [ns-str (name (ns-name ns))]
+    (-> ns-str
+        (.substring 0 (.lastIndexOf ns-str "."))
+        (.replace \- \_)
+        (.replace \. \/))))
 
 (defslimefn find-definitions-for-emacs [name]
   (let [sym-name (read-from-string name)
@@ -289,8 +291,6 @@
         (if-let [path (or (slime-find-file-in-paths (str (namespace-to-path (:ns meta))
                                                          (.separator File)
                                                          (:file meta)) (slime-search-paths))
-                          (slime-find-file-in-paths (str (namespace-to-path (:ns meta)) ".clj")
-                                                    (slime-search-paths))
                           (slime-find-file-in-paths (:file meta) (slime-search-paths)))]
         `((~(str "(defn " (:name meta) ")")
            (:location
