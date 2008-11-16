@@ -1,6 +1,6 @@
 (ns swank.commands.contrib.swank-c-p-c
   (:use (swank util core commands)
-        (swank.util string)))
+        (swank.util string clojure)))
 
 (defn- unacronym
   "Interposes delimiter between each character of string."
@@ -45,18 +45,6 @@
                 (recur newprefix
                        (inc new-tpos))
               new-tpos)))))))
-
-(defn- symbol-name-parts
-  "Parses a symbol name into a namespace and a name. If name doesn't
-   contain a namespace, the default-ns is used (nil if none provided)."
-  [#^String symbol]
-  (let [ns-pos (.indexOf symbol (int \/))]
-    (cond
-     (= ns-pos -1) ;; no slash?
-     [nil symbol]
-     :else
-     [(.substring symbol 0 ns-pos)
-      (.substring symbol (inc ns-pos))])))
 
 (defn- ns-exists
   "Given an string its-name, returns either an ns if a like named ns

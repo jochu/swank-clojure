@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [load-file])
   (:use (swank util commands core)
         (swank.util.concurrent thread)
-        (swank.util string))
+        (swank.util string clojure))
   (:require (swank.util [sys :as sys]))
   (:import (java.io StringReader File)
            (java.util.zip ZipFile)
@@ -185,17 +185,6 @@
    prefix."
   ([#^String prefix vars]
      (filter #(.startsWith % prefix) (map (comp name :name meta) vars))))
-
-(defn- symbol-name-parts
-  "Parses a symbol name into a namespace and a name. If name doesn't
-   contain a namespace, the default-ns is used (nil if none provided)."
-  ([symbol]
-     (symbol-name-parts symbol nil))
-  ([#^String symbol default-ns]
-     (let [ns-pos (.indexOf symbol (int \/))]
-       (if (= ns-pos -1) ;; namespace found? 
-         [default-ns symbol] 
-         [(.substring symbol 0 ns-pos) (.substring symbol (inc ns-pos))]))))
 
 (defn- maybe-alias [sym ns]
   (or (find-ns sym)
