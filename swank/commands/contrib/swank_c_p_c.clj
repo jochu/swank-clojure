@@ -1,10 +1,10 @@
 (ns swank.commands.contrib.swank-c-p-c
-  (:use (swank util core commands)))
+  (:use (swank util core commands)
+        (swank.util string)))
 
 (defn- unacronym
   "Interposes delimiter between each character of string."
-  ([delimiter,
-    #^String string]
+  ([delimiter #^String string]
      (apply str (interpose delimiter string)))
   {:tag String})
 
@@ -110,12 +110,6 @@
        (completion-list :var sym-name nil cur-ns)
        (map #(str % \/)
             (completion-list :ns sym-name))))))
-
-(defn- largest-common-prefix
-  "Returns the largest common prefix of two strings."
-  ([#^String a, #^String b]
-     (apply str (take-while (comp not nil?) (map #(when (= %1 %2) %1) a b))))
-  {:tag String})
 
 (defslimefn completions [string package]
   (let [matches (sort (compound-complete string package))

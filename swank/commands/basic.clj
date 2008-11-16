@@ -1,7 +1,8 @@
 (ns swank.commands.basic
   (:refer-clojure :exclude [load-file])
   (:use (swank util commands core)
-        (swank.util.concurrent thread))
+        (swank.util.concurrent thread)
+        (swank.util string))
   (:require (swank.util [sys :as sys]))
   (:import (java.io StringReader File)
            (java.util.zip ZipFile)
@@ -184,12 +185,6 @@
    prefix."
   ([#^String prefix vars]
      (filter #(.startsWith % prefix) (map (comp name :name meta) vars))))
-
-(defn- largest-common-prefix
-  "Returns the largest common prefix of two strings."
-  ([#^String a #^String b]
-     (apply str (take-while (comp not nil?) (map #(when (= %1 %2) %1) a b))))
-  {:tag String})
 
 (defn- symbol-name-parts
   "Parses a symbol name into a namespace and a name. If name doesn't
