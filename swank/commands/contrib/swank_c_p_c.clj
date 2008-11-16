@@ -74,40 +74,52 @@
 
   The compound completion delimeter is `.' for namespaces and `-' for
   symbols."
-  [of-what, #^String sym, & [maybe-ns, current-ns]]
+  [of-what,
+   #^String sym,
+   & [#^String sym-ns-name,
+      #^String cur-ns-name]]
   (cond
-   (= :ns of-what)
-   (filter (partial compound-prefix-match \. sym)
-           (map (comp name ns-name)     ;name of ns as String
-                (all-ns)))
-   (= :var of-what)
-   (map
-    (if maybe-ns
-      (partial str maybe-ns \/)
-      identity)
-    (filter
-     (partial compound-prefix-match \- sym)
-     (map
-      (comp name :name meta)            ;name of var as String
-      (filter var?
-              (vals (if (or (not maybe-ns)
-                            (= maybe-ns current-ns))
-                      ;; In current namespace, complete to all vars,
-                      ;; in other namespaces -- only to public vars.
-                      (ns-map current-ns)
-                      (ns-publics maybe-ns)))))))))
+   (= :ns of-what)                      ;complete namespaces
+     (filter (partial compound-prefix-match \. sym)
+             (map (comp name ns-name)   ;name of ns as String
+                  (all-ns)))
+   (= :var of-what)                     ;complete vars
+     (let [sym-ns (ns-exists sym-ns-name)
+           cur-ns (ns-exists cur-ns-name)
+           vars-of-ns (delay
+                       (filter
+                        var?
+                        (vals (if (or (not sym-ns-name)
+                                      (= sym-ns cur-ns))
+                                ;; In current namespace complete to all
+                                ;; vars, in other namespaces -- only to
+                                ;; public vars.
+                                (ns-map cur-ns)
+                                (ns-publics sym-ns)))))
+           completions (delay
+                         (filter
+                          (partial compound-prefix-match \- sym)
+                          (map
+                           (comp name :name meta) ;name of var as String
+                           (force vars-of-ns))))]
+       (cond
+        (and sym-ns-name (not sym-ns))  ;invalid ns given
+          nil
+        (and sym-ns-name sym-ns)        ;valid ns given
+          (map (partial str sym-ns-name "/")
+               (force completions))
+        :else                           ;no ns given
+          (force completions)))))
 
 (defn- compound-complete
   "Returns a list of possible completions of sym in cur-ns."
   [#^String sym,
-   #^String cur-ns]
-  (let [[sym-ns sym-name] (symbol-name-parts sym)
-        sym-ns (ns-exists sym-ns)
-        cur-ns (ns-exists cur-ns)]
-    (if sym-ns
-      (completion-list :var sym-name sym-ns cur-ns)
+   #^String cur-ns-name]
+  (let [[sym-ns-name sym-name] (symbol-name-parts sym)]
+    (if sym-ns-name
+      (completion-list :var sym-name sym-ns-name cur-ns-name)
       (concat
-       (completion-list :var sym-name nil cur-ns)
+       (completion-list :var sym-name nil cur-ns-name)
        (map #(str % \/)
             (completion-list :ns sym-name))))))
 
