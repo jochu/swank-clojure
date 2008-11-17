@@ -46,17 +46,24 @@
                        (inc new-tpos))
               new-tpos)))))))
 
+(defn- string-position
+  "Like position, but specifically for Strings and using Java
+  methods."
+  [chr,
+   #^String string]
+  (let [idx (.indexOf string (int chr))]
+    (when (not= -1 idx)
+      idx)))
+
 (defn- symbol-name-parts
   "Parses a symbol name into a namespace and a name. If name doesn't
-   contain a namespace, the default-ns is used (nil if none provided)."
+  contain a namespace, the default-ns is used (nil if none provided)."
   [#^String symbol]
-  (let [ns-pos (.indexOf symbol (int \/))]
-    (cond
-     (= ns-pos -1) ;; no slash?
-     [nil symbol]
-     :else
-     [(.substring symbol 0 ns-pos)
-      (.substring symbol (inc ns-pos))])))
+  (let [ns-pos (string-position \/ symbol)]
+    (if ns-pos
+      [(.substring symbol 0 ns-pos)
+       (.substring symbol (inc ns-pos))]     
+      [nil symbol])))
 
 (defn- ns-exists
   "Given an string its-name, returns either an ns if a like named ns
@@ -132,6 +139,22 @@
 (defslimefn completions [string package]
   (let [matches (sort (compound-complete string package))
         longest-comp (if matches
-                       (reduce largest-common-prefix matches)
+                       (let [last-char (fn [#^String string]
+                                         (.charAt string
+                                                  (dec (.length string))))
+                             prefix (reduce largest-common-prefix matches)]
+                         ;; Remove trailing \- or \. (if completing a
+                         ;; namespace) from longest completable
+                         ;; string, unless the text before it is not
+                         ;; expandable, so that cursor is positioned
+                         ;; before the dash or dot.
+                         (if (and
+                              (or (= \- (last-char prefix))
+                                  (and (not (string-position \/ prefix))
+                                       (= \. (last-char prefix))))
+                              (not-every? #(.startsWith % prefix)
+                                          matches))
+                           (.substring prefix 0 (dec (.length prefix)))
+                           prefix))
                        string)]
     (list matches longest-comp)))
