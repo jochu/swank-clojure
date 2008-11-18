@@ -135,6 +135,7 @@
   (let [matches (sort (compound-complete string package))
         longest-comp (if matches
                        (let [last-char (fn [#^String string]
+                                         ;; only for non-empty strings
                                          (.charAt string
                                                   (dec (.length string))))
                              prefix (reduce largest-common-prefix matches)]
@@ -144,6 +145,7 @@
                          ;; expandable, so that cursor is positioned
                          ;; before the dash or dot.
                          (if (and
+                              (not (empty? prefix))
                               (or (= \- (last-char prefix))
                                   (and (not (string-position \/ prefix))
                                        (= \. (last-char prefix))))
