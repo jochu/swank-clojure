@@ -2,12 +2,6 @@
   (:use (swank util core commands)
         (swank.util string clojure)))
 
-(defn- unacronym
-  "Interposes delimiter between each character of string."
-  ([delimiter #^String string]
-     (apply str (interpose delimiter string)))
-  {:tag String})
-
 ;;; Ported from slime's swank.
 (defn- compound-prefix-match
   "Takes a `prefix' and a `target' string and which returns position
@@ -18,31 +12,34 @@
   delimited by `delimeter', if each substring of `prefix' is a prefix
   of the corresponding substring in `target' then we call `prefix' a
   compound-prefix of `target'."
-  ([delimeter prefix target] (compound-prefix-match delimeter prefix target nil))
-  ([delimeter #^String prefix #^String target no-acronyms?]
-     (if (= "" prefix)
+  ([delimeter #^String prefix #^String target]
+     (if (= prefix "")
        0
-       (if (not no-acronyms?)
-         (or (compound-prefix-match delimeter prefix target true)
-             (compound-prefix-match delimeter
-                                    (unacronym delimeter prefix)
-                                    target
-                                    true))
-         (loop [prefix prefix
-                tpos 0]
-           (let [ch (first prefix)
-                 new-tpos (if (= ch delimeter)
-                            (position delimeter target tpos)
-                            tpos)]
-             (when (and tpos
-                        (< tpos (.length target))
-                        (if (not= tpos new-tpos)
-                          new-tpos
-                          (= ch (.charAt target tpos))))
-               (if-let [newprefix (rest prefix)]
-                 (recur newprefix
-                        (inc new-tpos))
-                 new-tpos))))))))
+       (loop [prefix prefix, tpos 0]
+         (let [ch (first prefix)
+               new-tpos (if (= ch delimeter)
+                          (position delimeter target tpos)
+                          tpos)]
+           (when (and tpos 
+                      (< tpos (.length target))
+                      (if (not= tpos new-tpos)
+                        new-tpos
+                        (= ch (.charAt target tpos))))
+             (if-let [newprefix (rest prefix)]
+               (recur newprefix
+                      (inc new-tpos))
+               new-tpos)))))))
+
+(defn- unacronym
+  "Interposes delimiter between each character of string."
+  ([delimiter #^String string]
+     (apply str (interpose delimiter string)))
+  {:tag String})
+
+(defn- compound-prefix-match-acronyms
+  ([delimiter prefix target]
+     (or (compound-prefix-match delimiter prefix target)
+         (compound-prefix-match delimiter (unacronym delimiter prefix) target))))
 
 (defn- ns-exists?
   "Given an string its-name, returns either an ns if a like named ns
@@ -63,7 +60,7 @@
   [of-what, #^String sym, & [maybe-ns, current-ns]]
   (cond
    (= :ns of-what)
-   (filter (partial compound-prefix-match \. sym)
+   (filter (partial compound-prefix-match-acronyms \. sym)
            (map (comp name ns-name)     ;name of ns as String
                 (all-ns)))
    (= :var of-what)
@@ -72,7 +69,7 @@
       (partial str maybe-ns \/)
       identity)
     (filter
-     (partial compound-prefix-match \- sym)
+     (partial compound-prefix-match-acronyms \- sym)
      (map
       (comp name :name meta)            ;name of var as String
       (filter var?
