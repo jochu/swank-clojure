@@ -8,16 +8,16 @@
   a compound-prefix of `target', and otherwise nil.
 
   Viewing each of `prefix' and `target' as a series of substrings
-  delimited by `delimeter', if each substring of `prefix' is a prefix
+  delimited by `delimiter', if each substring of `prefix' is a prefix
   of the corresponding substring in `target' then we call `prefix' a
   compound-prefix of `target'."
-  ([delimeter #^String prefix #^String target]
+  ([delimiter #^String prefix #^String target]
      (if (empty? prefix)
        0
        (loop [prefix prefix, tpos 0]
          (let [ch (first prefix)
-               new-tpos (if (= ch delimeter)
-                          (position delimeter target tpos)
+               new-tpos (if (= ch delimiter)
+                          (position delimiter target tpos)
                           tpos)]
            (when (and tpos 
                       (< tpos (.length target))
@@ -57,7 +57,7 @@
 
 (defn- completion-list-ns
   "Returns a list of nses that are possible compound completions of sym.
-   The compound completion delimeter is `.'"
+   The compound completion delimiter is `.'"
   ([sym]
      (filter (partial compound-prefix-match-acronyms \. sym)
              (map (comp name ns-name) (all-ns)))))
@@ -66,7 +66,7 @@
   "Returns a list of vars that are possible compound completions of sym,
    given that maybe-ns is nil or an ns in which to search of vars, and
    current-ns is the ns of the context of the completion or nil.
-   The compound completion delimeter is `-'"
+   The compound completion delimiter is `-'"
   ([sym-name sym-ns-name cur-ns-name]
      (let [sym-ns (ns-find-string sym-ns-name)
            cur-ns (ns-find-string cur-ns-name)
