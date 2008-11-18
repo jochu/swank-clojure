@@ -113,7 +113,7 @@
    (label-value-line*
     ("Class" (class obj)))
    (inspect-meta-information obj)
-   (when (. obj isBound)
+   (when (.isBound obj)
      `("Value: " (:value ~(var-get obj))))))
 
 (defmethod emacs-inspect :string [obj]

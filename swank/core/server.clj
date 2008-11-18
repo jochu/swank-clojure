@@ -44,11 +44,13 @@
 
 (defn- socket-serve [connection-serve socket opts]
   (with-connection (accept-authenticated-connection socket opts)
-    (binding [*out* (make-output-redirection *current-connection*)]
-      (dosync (ref-set (*current-connection* :writer-redir) *out*))
-      (dosync (alter *connections* conj *current-connection*))
-      (connection-serve *current-connection*)
-      (not dont-close))))
+    (let [out-redir (make-output-redirection *current-connection*)]
+      (binding [*out* out-redir
+                *err* (java.io.PrintWriter. out-redir)]
+        (dosync (ref-set (*current-connection* :writer-redir) *out*))
+        (dosync (alter *connections* conj *current-connection*))
+        (connection-serve *current-connection*)
+        (not dont-close)))))
 
 
 ;; Setup frontent
