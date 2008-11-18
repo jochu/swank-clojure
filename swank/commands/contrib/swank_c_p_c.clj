@@ -39,15 +39,6 @@
      (or (compound-prefix-match delimiter prefix target)
          (compound-prefix-match delimiter (unacronym delimiter prefix) target))))
 
-(defn- string-position
-  "Like position, but specifically for Strings and using Java
-  methods."
-  [chr,
-   #^String string]
-  (let [idx (.indexOf string (int chr))]
-    (when (not= -1 idx)
-      idx)))
-
 (defn- ns-find-string
   "Given an string its-name, returns either an ns if a like named ns
   exists, or nil. If its-name is nil, returns nil."
@@ -122,7 +113,7 @@
                          (if (and
                               (not (empty? prefix))
                               (or (= \- (last-char prefix))
-                                  (and (not (string-position \/ prefix))
+                                  (and (not (char-position \/ prefix))
                                        (= \. (last-char prefix))))
                               (not-every? #(.startsWith % prefix)
                                           matches))
