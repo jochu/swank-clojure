@@ -39,12 +39,11 @@
      (or (compound-prefix-match delimiter prefix target)
          (compound-prefix-match delimiter (unacronym delimiter prefix) target))))
 
-(defn- ns-find-string
+(defn- find-ns-str
   "Given an string its-name, returns either an ns if a like named ns
   exists, or nil. If its-name is nil, returns nil."
-  [its-name]
-  (and its-name
-       (find-ns (symbol its-name))))
+  ([its-name]
+     (and its-name (find-ns (symbol its-name)))))
 
 (defn- completion-list-ns
   "Returns a list of nses that are possible compound completions of sym.
@@ -59,8 +58,8 @@
    current-ns is the ns of the context of the completion or nil.
    The compound completion delimiter is `-'"
   ([sym-name sym-ns-name cur-ns-name]
-     (let [sym-ns (ns-find-string sym-ns-name)
-           cur-ns (ns-find-string cur-ns-name)
+     (let [sym-ns (find-ns-str sym-ns-name)
+           cur-ns (find-ns-str cur-ns-name)
            vars-of-ns (delay
                        (filter
                         var?
