@@ -44,7 +44,7 @@
                         (inc new-tpos))
                  new-tpos))))))))
 
-(defn- ns-exists
+(defn- ns-exists?
   "Given an string its-name, returns either an ns if a like named ns
   exists, or nil. If its-name is nil, returns nil."
   [#^String its-name]
@@ -88,8 +88,8 @@
   [#^String sym,
    #^String cur-ns]
   (let [[sym-ns sym-name] (symbol-name-parts sym)
-        sym-ns (ns-exists sym-ns)
-        cur-ns (ns-exists cur-ns)]
+        sym-ns (ns-exists? sym-ns)
+        cur-ns (ns-exists? cur-ns)]
     (if sym-ns
       (completion-list :var sym-name sym-ns cur-ns)
       (concat
