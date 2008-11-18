@@ -57,28 +57,31 @@
 
   The compound completion delimeter is `.' for namespaces and `-' for
   symbols."
-  [of-what, #^String sym, & [maybe-ns, current-ns]]
-  (cond
-   (= :ns of-what)
-   (filter (partial compound-prefix-match-acronyms \. sym)
-           (map (comp name ns-name)     ;name of ns as String
-                (all-ns)))
-   (= :var of-what)
-   (map
-    (if maybe-ns
-      (partial str maybe-ns \/)
-      identity)
-    (filter
-     (partial compound-prefix-match-acronyms \- sym)
-     (map
-      (comp name :name meta)            ;name of var as String
-      (filter var?
-              (vals (if (or (not maybe-ns)
-                            (= maybe-ns current-ns))
-                      ;; In current namespace, complete to all vars,
-                      ;; in other namespaces -- only to public vars.
-                      (ns-map current-ns)
-                      (ns-publics maybe-ns)))))))))
+  ([of-what sym]          (completion-list of-what sym nil))
+  ([of-what sym maybe-ns] (completion-list of-what sym maybe-ns nil))
+  ([of-what #^String sym maybe-ns current-ns]
+     (cond
+      (= :ns of-what)
+      (filter (partial compound-prefix-match-acronyms \. sym)
+              (map (comp name ns-name)  ;name of ns as String
+                   (all-ns)))
+      
+      (= :var of-what)
+      (map
+       (if maybe-ns
+         (partial str maybe-ns \/)
+         identity)
+       (filter
+        (partial compound-prefix-match-acronyms \- sym)
+        (map
+         (comp name :name meta)         ;name of var as String
+         (filter var?
+                 (vals (if (or (not maybe-ns)
+                               (= maybe-ns current-ns))
+                         ;; In current namespace, complete to all vars,
+                         ;; in other namespaces -- only to public vars.
+                         (ns-map current-ns)
+                         (ns-publics maybe-ns))))))))))
 
 (defn- compound-complete
   "Returns a list of possible completions of sym in cur-ns."
