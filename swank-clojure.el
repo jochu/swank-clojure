@@ -87,25 +87,25 @@ will be used over paths too.)"
 
 (defun swank-clojure-cmd ()
   "Create the command to start clojure according to current settings."
-  (if swank-clojure-binary
-      (if (listp swank-clojure-binary)
-          swank-clojure-binary
-        (list swank-clojure-binary))
-    (if (not swank-clojure-jar-path)
-        (error "You must specify a `swank-clojure-jar-path'")
+  (if (and (not swank-clojure-binary) (not swank-clojure-jar-path))
+      (error "You must specifiy either a `swank-clojure-binary' or a `swank-clojure-jar-path'")
+    (if swank-clojure-binary
+	(if (listp swank-clojure-binary)
+	    swank-clojure-binary
+	  (list swank-clojure-binary))
       (delete-if
        'null
        (append
-        (list swank-clojure-java-path)
-        swank-clojure-extra-vm-args
-        (list
-         (when swank-clojure-library-paths
-           (concat "-Djava.library.path="
-                   (swank-clojure-concat-paths swank-clojure-library-paths)))
-         "-classpath"
-         (swank-clojure-concat-paths
-          (cons swank-clojure-jar-path swank-clojure-extra-classpaths))
-         "clojure.lang.Repl"))))))
+	(list swank-clojure-java-path)
+	swank-clojure-extra-vm-args
+	(list
+	 (when swank-clojure-library-paths
+	   (concat "-Djava.library.path="
+		   (swank-clojure-concat-paths swank-clojure-library-paths)))
+	 "-classpath"
+	 (swank-clojure-concat-paths
+	  (cons swank-clojure-jar-path swank-clojure-extra-classpaths))
+	 "clojure.lang.Repl"))))))
 
 ;; Change the repl to be more clojure friendly
 (defun swank-clojure-slime-repl-modify-syntax ()
