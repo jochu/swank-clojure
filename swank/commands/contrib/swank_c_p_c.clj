@@ -21,7 +21,9 @@
    prefix,
    #^String target,
    & [no-acronyms?]]
-  (if (= "" prefix)
+  ;; If prefix is empty, any completion will do. "user> user/TAB"
+  ;; shows all completions this way.
+  (if (empty? prefix)
     0
     (if (not no-acronyms?)
       (or (compound-prefix-match delimeter prefix target true)
