@@ -3,8 +3,7 @@
 
 (defn- unacronym
   "Interposes delimiter between each character of string."
-  ([delimiter,
-    #^String string]
+  ([delimiter string]
      (apply str (interpose delimiter string)))
   {:tag String})
 
@@ -19,7 +18,7 @@
   of the corresponding substring in `target' then we call `prefix' a
   compound-prefix of `target'."
   [delimeter,
-   #^String prefix,
+   prefix,
    #^String target,
    & [no-acronyms?]]
   (if (= "" prefix)
@@ -65,34 +64,31 @@
        (.substring symbol (inc ns-pos))]     
       [nil symbol])))
 
-(defn- ns-exists
+(defn- find-ns-string
   "Given an string its-name, returns either an ns if a like named ns
   exists, or nil. If its-name is nil, returns nil."
-  [#^String its-name]
+  [its-name]
   (and its-name
        (find-ns (symbol its-name))))
 
 (defn- completion-list
   "Returns a list of vars or nses (depending on value of of-what:
-  either :var or :ns) that are possible compound completions of sym,
+  either :var or :ns) that are possible compound completions of sym-name,
   given that maybe-ns is nil or an ns in which to search of vars if
   of-what is :var, and current-ns is the ns of the context of the
   completion or nil.
 
   The compound completion delimeter is `.' for namespaces and `-' for
   symbols."
-  [of-what,
-   #^String sym,
-   & [#^String sym-ns-name,
-      #^String cur-ns-name]]
+  [of-what sym-name & [sym-ns-name cur-ns-name]]
   (cond
    (= :ns of-what)                      ;complete namespaces
-     (filter (partial compound-prefix-match \. sym)
+     (filter (partial compound-prefix-match \. sym-name)
              (map (comp name ns-name)   ;name of ns as String
                   (all-ns)))
    (= :var of-what)                     ;complete vars
-     (let [sym-ns (ns-exists sym-ns-name)
-           cur-ns (ns-exists cur-ns-name)
+     (let [sym-ns (ns-find-string sym-ns-name)
+           cur-ns (ns-find-string cur-ns-name)
            vars-of-ns (delay
                        (filter
                         var?
@@ -105,7 +101,7 @@
                                 (ns-publics sym-ns)))))
            completions (delay
                          (filter
-                          (partial compound-prefix-match \- sym)
+                          (partial compound-prefix-match \- sym-name)
                           (map
                            (comp name :name meta) ;name of var as String
                            (force vars-of-ns))))]
@@ -120,8 +116,7 @@
 
 (defn- compound-complete
   "Returns a list of possible completions of sym in cur-ns."
-  [#^String sym,
-   #^String cur-ns-name]
+  [sym cur-ns-name]
   (let [[sym-ns-name sym-name] (symbol-name-parts sym)]
     (if sym-ns-name
       (completion-list :var sym-name sym-ns-name cur-ns-name)
