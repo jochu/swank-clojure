@@ -18,33 +18,31 @@
   delimited by `delimeter', if each substring of `prefix' is a prefix
   of the corresponding substring in `target' then we call `prefix' a
   compound-prefix of `target'."
-  [delimeter,
-   #^String prefix,
-   #^String target,
-   & [no-acronyms?]]
-  (if (= "" prefix)
-    0
-    (if (not no-acronyms?)
-      (or (compound-prefix-match delimeter prefix target true)
-          (compound-prefix-match delimeter
-                                 (unacronym delimeter prefix)
-                                 target
-                                 true))
-      (loop [prefix prefix
-             tpos 0]
-        (let [ch (first prefix)
-              new-tpos (if (= ch delimeter)
-                         (position delimeter target tpos)
-                         tpos)]
-          (when (and tpos
-                     (< tpos (.length target))
-                     (if (not= tpos new-tpos)
-                       new-tpos
-                       (= ch (.charAt target tpos))))
-            (if-let [newprefix (rest prefix)]
-                (recur newprefix
-                       (inc new-tpos))
-              new-tpos)))))))
+  ([delimeter prefix target] (compound-prefix-match delimeter prefix target nil))
+  ([delimeter #^String prefix #^String target no-acronyms?]
+     (if (= "" prefix)
+       0
+       (if (not no-acronyms?)
+         (or (compound-prefix-match delimeter prefix target true)
+             (compound-prefix-match delimeter
+                                    (unacronym delimeter prefix)
+                                    target
+                                    true))
+         (loop [prefix prefix
+                tpos 0]
+           (let [ch (first prefix)
+                 new-tpos (if (= ch delimeter)
+                            (position delimeter target tpos)
+                            tpos)]
+             (when (and tpos
+                        (< tpos (.length target))
+                        (if (not= tpos new-tpos)
+                          new-tpos
+                          (= ch (.charAt target tpos))))
+               (if-let [newprefix (rest prefix)]
+                 (recur newprefix
+                        (inc new-tpos))
+                 new-tpos))))))))
 
 (defn- ns-exists
   "Given an string its-name, returns either an ns if a like named ns
