@@ -187,8 +187,7 @@
      (filter #(.startsWith % prefix) (map (comp name :name meta) vars))))
 
 (defn- maybe-alias [sym ns]
-  (or (find-ns sym)
-      (get (ns-aliases (maybe-ns ns)) sym)
+  (or (resolve-ns sym (maybe-ns ns))
       (maybe-ns ns)))
 
 (defslimefn simple-completions [symbol-string package]
