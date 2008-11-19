@@ -73,5 +73,5 @@
   ([#^String file port]
      (with-open [out (new java.io.FileWriter file)]
        (doto out
-         (write (str port "\n"))
-         (flush)))))
+         (.write (str port "\n"))
+         (.flush)))))

@@ -8,7 +8,7 @@
   "Starts a thread that run the given function f"
   ([f]
      (doto (Thread. f)
-       (start))))
+       (.start))))
 
 (defmacro dothread [& body]
   `(start-thread (fn [] ~@body)))

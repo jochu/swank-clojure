@@ -34,9 +34,9 @@
      (let [s (pr-str message)
            len (.length s)]
        (doto w
-         (write (num->hex len 6))
-         (write s)
-         (flush))))
+         (.write (num->hex len 6))
+         (.write s)
+         (.flush))))
   {:tag String})
 
 (defn read-swank-message
