@@ -27,3 +27,7 @@
        (if (= ns-pos -1) ;; namespace found? 
          [default-ns symbol] 
          [(.substring symbol 0 ns-pos) (.substring symbol (inc ns-pos))]))))
+
+(defn resolve-ns [sym ns]
+  (or (find-ns sym)
+      (get (ns-aliases ns) sym))) 
