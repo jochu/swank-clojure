@@ -1,7 +1,8 @@
 (ns swank.commands.basic
   (:refer-clojure :exclude [load-file])
   (:use (swank util commands core)
-        (swank.util.concurrent thread))
+        (swank.util.concurrent thread)
+        (swank.util string clojure))
   (:require (swank.util [sys :as sys]))
   (:import (java.io StringReader File)
            (java.util.zip ZipFile)
@@ -185,26 +186,8 @@
   ([#^String prefix vars]
      (filter #(.startsWith % prefix) (map (comp name :name meta) vars))))
 
-(defn- largest-common-prefix
-  "Returns the largest common prefix of two strings."
-  ([#^String a #^String b]
-     (apply str (take-while (comp not nil?) (map #(when (= %1 %2) %1) a b))))
-  {:tag String})
-
-(defn- symbol-name-parts
-  "Parses a symbol name into a namespace and a name. If name doesn't
-   contain a namespace, the default-ns is used (nil if none provided)."
-  ([symbol]
-     (symbol-name-parts symbol nil))
-  ([#^String symbol default-ns]
-     (let [ns-pos (.indexOf symbol (int \/))]
-       (if (= ns-pos -1) ;; namespace found? 
-         [default-ns symbol] 
-         [(.substring symbol 0 ns-pos) (.substring symbol (inc ns-pos))]))))
-
 (defn- maybe-alias [sym ns]
-  (or (find-ns sym)
-      (get (ns-aliases (maybe-ns ns)) sym)
+  (or (resolve-ns sym (maybe-ns ns))
       (maybe-ns ns)))
 
 (defslimefn simple-completions [symbol-string package]

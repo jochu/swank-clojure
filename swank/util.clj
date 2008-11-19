@@ -27,9 +27,10 @@
 
 (defn position
   "Finds the first position of item within col. Returns nil if not
-   found."
-  ([item coll]
-     (loop [coll coll, i 0]
+   found. Optionally provide a start offset to search from."
+  ([item coll] (position item coll 0))
+  ([item coll start]
+     (loop [coll (drop start coll), i start]
        (when coll
          (if (= (first coll) item)
            i
