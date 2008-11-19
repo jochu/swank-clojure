@@ -11,8 +11,8 @@
    of the corresponding substring in `target' then we call `prefix' a
    compound-prefix of `target'."
   ([delimiter #^String prefix #^String target]
-     (let [prefixes (.split prefix delimiter)
-           targets (.split target delimiter)]
+     (let [prefixes (.split prefix delimiter -1)
+           targets (.split target delimiter -1)]
        (when (<= (count prefixes) (count targets))
          (every? true? (map #(.startsWith %1 %2) targets prefixes))))))
 
