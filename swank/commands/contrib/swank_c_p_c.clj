@@ -30,15 +30,18 @@
 (defn- find-ns-str
   "Given an string its-name, returns either an ns if a like named ns
   exists, or nil. If its-name is nil, returns nil."
-  ([its-name]
-     (and its-name (find-ns (symbol its-name)))))
+  ([its-name] (find-ns-str its-name nil))
+  ([its-name cur-ns-name]
+     (and its-name
+          (resolve-ns (symbol its-name) (maybe-ns cur-ns-name)))))
 
 (defn- completion-list-ns
   "Returns a list of nses that are possible compound completions of sym.
    The compound completion delimiter is `.'"
-  ([sym]
+  ([sym cur-ns-name]
      (filter (partial compound-prefix-match-acronyms? "\\." sym)
-             (map (comp name ns-name) (all-ns)))))
+             (concat (map (comp name ns-name) (all-ns))
+                     (map name (keys (ns-aliases (find-ns-str cur-ns-name))))))))
 
 (defn- completion-list-var
   "Returns a list of vars that are possible compound completions of sym,
@@ -46,7 +49,7 @@
    current-ns is the ns of the context of the completion or nil.
    The compound completion delimiter is `-'"
   ([sym-name sym-ns-name cur-ns-name]
-     (let [sym-ns (find-ns-str sym-ns-name)
+     (let [sym-ns (find-ns-str sym-ns-name cur-ns-name)
            cur-ns (find-ns-str cur-ns-name)
            vars-of-ns (delay
                        (filter
@@ -82,7 +85,7 @@
       (concat
        (completion-list-var sym-name nil cur-ns-name)
        (map #(str % \/)
-            (completion-list-ns sym-name))))))
+            (completion-list-ns sym-name cur-ns-name))))))
 
 (defslimefn completions [string package]
   (let [matches (sort (compound-complete string package))
