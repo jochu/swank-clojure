@@ -2,31 +2,19 @@
   (:use (swank util core commands)
         (swank.util string clojure)))
 
-(defn- compound-prefix-match
-  "Takes a `prefix' and a `target' string and which returns position
-  of last character in `target' which matches `prefix' if `prefix' is
-  a compound-prefix of `target', and otherwise nil.
+(defn- compound-prefix-match?
+  "Takes a `prefix' and a `target' string and returns whether `prefix'
+   is a compound-prefix of `target'.
 
-  Viewing each of `prefix' and `target' as a series of substrings
-  delimited by `delimiter', if each substring of `prefix' is a prefix
-  of the corresponding substring in `target' then we call `prefix' a
-  compound-prefix of `target'."
+   Viewing each of `prefix' and `target' as a series of substrings
+   delimited by `delimiter', if each substring of `prefix' is a prefix
+   of the corresponding substring in `target' then we call `prefix' a
+   compound-prefix of `target'."
   ([delimiter #^String prefix #^String target]
-     (if (empty? prefix)
-       0
-       (loop [prefix prefix, tpos 0]
-         (let [ch (first prefix)
-               new-tpos (if (= ch delimiter)
-                          (position delimiter target tpos)
-                          tpos)]
-           (when (and tpos 
-                      (< tpos (.length target))
-                      (if (not= tpos new-tpos)
-                        new-tpos
-                        (= ch (.charAt target tpos))))
-             (if-let [newprefix (rest prefix)]
-               (recur newprefix (inc new-tpos))
-               new-tpos)))))))
+     (let [prefixes (.split prefix delimiter)
+           targets (.split target delimiter)]
+       (when (<= (count prefixes) (count targets))
+         (every? true? (map #(.startsWith %1 %2) targets prefixes))))))
 
 (defn- unacronym
   "Interposes delimiter between each character of string."
@@ -34,10 +22,10 @@
      (apply str (interpose delimiter string)))
   {:tag String})
 
-(defn- compound-prefix-match-acronyms
+(defn- compound-prefix-match-acronyms?
   ([delimiter prefix target]
-     (or (compound-prefix-match delimiter prefix target)
-         (compound-prefix-match delimiter (unacronym delimiter prefix) target))))
+     (or (compound-prefix-match? delimiter prefix target)
+         (compound-prefix-match? delimiter (unacronym delimiter prefix) target))))
 
 (defn- find-ns-str
   "Given an string its-name, returns either an ns if a like named ns
@@ -49,7 +37,7 @@
   "Returns a list of nses that are possible compound completions of sym.
    The compound completion delimiter is `.'"
   ([sym]
-     (filter (partial compound-prefix-match-acronyms \. sym)
+     (filter (partial compound-prefix-match-acronyms? "\\." sym)
              (map (comp name ns-name) (all-ns)))))
 
 (defn- completion-list-var
@@ -72,7 +60,7 @@
                                 (ns-publics sym-ns)))))
            completions (delay
                         (filter
-                         (partial compound-prefix-match-acronyms \- sym-name)
+                         (partial compound-prefix-match-acronyms? "-" sym-name)
                          (map
                           (comp name :name meta) ;name of var as String
                           (force vars-of-ns))))]
