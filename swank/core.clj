@@ -36,7 +36,7 @@
      ~@body))
 
 ;; Exceptions for debugging
-(defexception swank.core.DebugQuitException)
+(def *debug-quit-exception* (Exception. "Debug quit"))
 (def *current-exception*)
 
 ;; Handle Evaluation
@@ -69,7 +69,7 @@
                  (exception-causes cause))))
 
 (defn- debug-quit-exception? [t]
-  (some #(instance? swank.core.DebugQuitException %) (exception-causes t)))
+  (some #(identical? *debug-quit-exception* %) (exception-causes t)))
 
 (defn debug-loop
   "A loop that is intented to take over an eval thread when a debug is

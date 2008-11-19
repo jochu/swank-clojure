@@ -69,13 +69,6 @@
 (defmacro continuously [& body]
   `(loop [] ~@body (recur)))
 
-(defmacro defexception [name]
-  `(try
-    (gen-and-load-class (quote ~name) :extends Exception)
-    (catch java.lang.LinkageError le#
-      ;; ignore linkage error, probably just already defined
-      nil)))
-
 (defn read-from-string
   "Reads the next object from a string, throws an exception when form
    cannot be read."
