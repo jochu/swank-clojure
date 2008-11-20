@@ -38,10 +38,9 @@
    PORT-FILE. This is the entry point for Emacs."
   ([port-file & opts]
      (let [opts (apply hash-map opts)]
-       (binding [*warn-on-reflection* (opts :warn-on-reflection false)]
-         (setup-server (get opts :port 0)
-                       (fn announce-port [port]
-                         (announce-port-to-file port-file port)
-                         (simple-announce port))
-                       connection-serve
-                       opts)))))
+       (setup-server (get opts :port 0)
+                     (fn announce-port [port]
+                       (announce-port-to-file port-file port)
+                       (simple-announce port))
+                     connection-serve
+                     opts))))
