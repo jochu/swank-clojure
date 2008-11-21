@@ -31,8 +31,8 @@
   ([#^Socket socket] (make-connection socket *default-encoding*))
   ([#^Socket socket encoding]
      {:socket socket
-      :reader (InputStreamReader. (.getInputStream socket) (get encoding-map encoding encoding))
-      :writer (OutputStreamWriter. (.getOutputStream socket) (get encoding-map encoding encoding))
+      :reader (InputStreamReader. (.getInputStream socket) #^String (get encoding-map encoding encoding))
+      :writer (OutputStreamWriter. (.getOutputStream socket) #^String (get encoding-map encoding encoding))
       :writer-redir (ref nil)
    
       :indent-cache (ref {})

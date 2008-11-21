@@ -78,7 +78,7 @@
 ;;;; Compiler / Execution
 
 (def *compiler-exception-location-re* #"^clojure\\.lang\\.Compiler\\$CompilerException: ([^:]+):([^:]+):")
-(defn- guess-compiler-exception-location [t]
+(defn- guess-compiler-exception-location [#^Throwable t]
   (when (instance? clojure.lang.Compiler$CompilerException t)
     (let [[match file line] (re-find *compiler-exception-location-re* (.toString t))]
       (when (and file line)
@@ -184,7 +184,7 @@
   "Filters a coll of vars and returns only those that have a given
    prefix."
   ([#^String prefix vars]
-     (filter #(.startsWith % prefix) (map (comp name :name meta) vars))))
+     (filter #(.startsWith #^String % prefix) (map (comp name :name meta) vars))))
 
 (defn- maybe-alias [sym ns]
   (or (resolve-ns sym (maybe-ns ns))
@@ -258,10 +258,10 @@
 
 (defn- slime-search-paths []
   (concat (get-path-prop "user.dir" "java.class.path" "sun.boot.class.path")
-          (map #(.getPath %) (.getURLs clojure.lang.RT/ROOT_CLASSLOADER))))
+          (map #(.getPath #^java.net.URL %) (.getURLs clojure.lang.RT/ROOT_CLASSLOADER))))
 
 (defn- namespace-to-path [ns]
-  (let [ns-str (name (ns-name ns))]
+  (let [#^String ns-str (name (ns-name ns))]
     (-> ns-str
         (.substring 0 (.lastIndexOf ns-str "."))
         (.replace \- \_)

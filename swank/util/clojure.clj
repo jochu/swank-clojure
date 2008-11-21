@@ -3,7 +3,7 @@
 (defn unmunge
   "Converts a javafied name to a clojure symbol name"
   ([#^String name]
-     (reduce (fn [s [to from]]
+     (reduce (fn [#^String s [to from]]
                (.replaceAll s from (str to)))
              name
              clojure.lang.Compiler/CHAR_MAP)))
@@ -11,7 +11,7 @@
 (defn ns-path
   "Returns the path form of a given namespace"
   ([#^clojure.lang.Namespace ns]
-     (let [ns-str (name (ns-name ns))]
+     (let [#^String ns-str (name (ns-name ns))]
        (-> ns-str
            (.substring 0 (.lastIndexOf ns-str "."))
            (.replace \- \_)

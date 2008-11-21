@@ -10,7 +10,7 @@
   "Finds the position of a character within a string, optionally
    provide a starting index. Returns nil if none is found."
   ([c str] (char-position c str 0))
-  ([#^Character c #^String str start]
+  ([#^Character c #^String str #^Integer start]
      (let [idx (.indexOf str (int c) start)]
        (when (not= -1 idx)
          idx))))

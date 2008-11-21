@@ -6,7 +6,7 @@
 
 (defn start-thread
   "Starts a thread that run the given function f"
-  ([f]
+  ([#^Runnable f]
      (doto (Thread. f)
        (.start))))
 
@@ -17,7 +17,7 @@
   `(start-thread (keep-bindings ~bindings (fn [] ~@body))))
 
 (defmacro dothread-keeping-clj [more-bindings & body]
-  (let [clj-star-syms (filter #(.startsWith (name %) "*")
+  (let [clj-star-syms (filter #(.startsWith #^String (name %) "*")
                               (keys (ns-publics (find-ns 'clojure.core))))]
     `(dothread-keeping [~@clj-star-syms ~@more-bindings]
        ~@body)))

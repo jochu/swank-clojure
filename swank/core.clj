@@ -37,7 +37,7 @@
 
 ;; Exceptions for debugging
 (def *debug-quit-exception* (Exception. "Debug quit"))
-(def *current-exception*)
+(def #^Throwable *current-exception*)
 
 ;; Handle Evaluation
 (defn send-to-emacs

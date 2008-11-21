@@ -35,10 +35,12 @@
              (.close socket)
              (throw (new Exception "Incoming connection doesn't know the password."))))))))
 
-(defn- make-output-redirection [conn]
-  (call-on-flush-stream
-   #(with-connection conn
-      (send-to-emacs `(:write-string ~%)))))
+(defn- make-output-redirection
+  ([conn]
+     (call-on-flush-stream
+      #(with-connection conn
+         (send-to-emacs `(:write-string ~%)))))
+  {:tag java.io.StringWriter})
 
 (def dont-close nil)
 
