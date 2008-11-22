@@ -191,7 +191,8 @@
 
          (= action :return)
          (let [[thread & ret] args]
-           (write-to-connection conn `(:return ~@ret)))
+           (binding [*print-level* nil, *print-length* nil]
+             (write-to-connection conn `(:return ~@ret))))
 
          (one-of? action
                   :write-string :presentation-start :presentation-end
