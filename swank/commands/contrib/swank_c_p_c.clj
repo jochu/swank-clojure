@@ -29,11 +29,13 @@
 
 (defn- find-ns-str
   "Given an string its-name, returns either an ns if a like named ns
-  exists, or nil. If its-name is nil, returns nil."
+  exists, or nil. If its-name is nil, returns the default ns."
   ([its-name] (find-ns-str its-name nil))
   ([its-name cur-ns-name]
-     (and its-name
-          (resolve-ns (symbol its-name) (maybe-ns cur-ns-name)))))
+     (if (nil? its-name)
+       (maybe-ns nil)
+       (and its-name
+            (resolve-ns (symbol its-name) (maybe-ns cur-ns-name))))))
 
 (defn- completion-list-ns
   "Returns a list of nses that are possible compound completions of sym.
