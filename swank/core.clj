@@ -12,12 +12,12 @@
 (def *current-package*)
 
 (defn maybe-ns [package]
-    (cond
-     (symbol? package) (or (find-ns package) (maybe-ns 'user))
-     (string? package) (maybe-ns (symbol package))
-     (keyword? package) (maybe-ns (name package))
-     (instance? clojure.lang.Namespace package) package
-     :else (maybe-ns 'user)))
+  (cond
+   (symbol? package) (or (find-ns package) (maybe-ns 'user))
+   (string? package) (maybe-ns (symbol package))
+   (keyword? package) (maybe-ns (name package))
+   (instance? clojure.lang.Namespace package) package
+   :else (maybe-ns 'user)))
 
 (defmacro with-emacs-package [& body]
   `(binding [*ns* (maybe-ns *current-package*)]
