@@ -195,9 +195,13 @@
              (write-to-connection conn `(:return ~@ret))))
 
          (one-of? action
-                  :write-string :presentation-start :presentation-end
+                  :presentation-start :presentation-end
                   :new-package :new-features :ed :percent-apply :indentation-update
                   :eval-no-wait :background-message :inspect)
+         (binding [*print-level* nil, *print-length* nil]
+           (write-to-connection conn ev))
+
+         (= action :write-string)
          (write-to-connection conn ev)
 
          (one-of? action
