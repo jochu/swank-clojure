@@ -11,6 +11,8 @@
 ;; Emacs packages
 (def *current-package*)
 
+(def *active-threads* (ref ()))
+
 (defn maybe-ns [package]
   (cond
    (symbol? package) (or (find-ns package) (maybe-ns 'user))
@@ -135,13 +137,25 @@
      ;; reply with abort
      (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id)))))
 
+(defn- add-active-thread [thread]
+  (dosync
+   (commute *active-threads* conj thread)))
+
+(defn- remove-active-thread [thread]
+  (dosync
+   (commute *active-threads* (fn [threads] (remove #(= % thread) threads)))))
+
 (defn spawn-worker-thread
   "Spawn an thread that blocks for a single command from the control
    thread, executes it, then terminates."
   ([conn]
      (dothread-swank
-      (thread-set-name "Swank Worker Thread")
-      (eval-from-control))))
+       (try
+        (add-active-thread (current-thread))
+        (thread-set-name "Swank Worker Thread")
+        (eval-from-control)
+        (finally
+         (remove-active-thread (current-thread)))))))
 
 (defn spawn-repl-thread
   "Spawn an thread that sets itself as the current
@@ -208,6 +222,14 @@
                   :debug :debug-condition :debug-activate :debug-return)
          (let [[thread & args] args]
            (write-to-connection conn `(~action ~(thread-map-id thread) ~@args)))
+
+         (= action :emacs-interrupt)
+         (let [[thread & args] args]
+           (dosync
+            (when (and (true? thread)
+                       @*active-threads*)
+              (. (first @*active-threads*)
+                 stop))))
          
          :else
          nil))))
