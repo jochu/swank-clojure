@@ -57,6 +57,10 @@ swank-clojure-java-path) if non-nil."
   :type 'string
   :group 'swank-clojure)
 
+(defcustom swank-clojure-init-files nil
+  "If provided, will be used to initialize the REPL environment."
+  :type 'list
+  :group 'swank-clojure)
 
 (defun swank-clojure-init (file encoding)
   (format "%S\n\n%S\n\n%S\n\n%S\n\n"
@@ -90,22 +94,27 @@ will be used over paths too.)"
   (if (and (not swank-clojure-binary) (not swank-clojure-jar-path))
       (error "You must specifiy either a `swank-clojure-binary' or a `swank-clojure-jar-path'")
     (if swank-clojure-binary
-	(if (listp swank-clojure-binary)
-	    swank-clojure-binary
-	  (list swank-clojure-binary))
+        (if (listp swank-clojure-binary)
+            swank-clojure-binary
+          (list swank-clojure-binary))
       (delete-if
        'null
        (append
-	(list swank-clojure-java-path)
-	swank-clojure-extra-vm-args
-	(list
-	 (when swank-clojure-library-paths
-	   (concat "-Djava.library.path="
-		   (swank-clojure-concat-paths swank-clojure-library-paths)))
-	 "-classpath"
-	 (swank-clojure-concat-paths
-	  (cons swank-clojure-jar-path swank-clojure-extra-classpaths))
-	 "clojure.lang.Repl"))))))
+        (list swank-clojure-java-path)
+        swank-clojure-extra-vm-args
+        (list
+         (when swank-clojure-library-paths
+           (concat "-Djava.library.path="
+                   (swank-clojure-concat-paths swank-clojure-library-paths)))
+         "-classpath"
+         (swank-clojure-concat-paths
+          (cons swank-clojure-jar-path swank-clojure-extra-classpaths))
+         "clojure.main")
+        (let ((init-opts '()))
+          (dolist (init-file swank-clojure-init-files init-opts) 
+            (setq init-opts (append init-opts (list "-i" init-file))))
+          init-opts)
+        (list "--repl"))))))
 
 ;; Change the repl to be more clojure friendly
 (defun swank-clojure-slime-repl-modify-syntax ()
