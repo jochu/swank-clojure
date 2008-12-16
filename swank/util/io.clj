@@ -28,7 +28,7 @@
        (dothread
          (thread-set-name "Call-on-write Stream")
          (continuously
-           (.sleep Thread 200)
+           (Thread/sleep 200)
            (when-not @closed?
              (.flush stream))))
        
