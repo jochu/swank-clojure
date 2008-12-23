@@ -228,7 +228,7 @@
            (dosync
             (when (and (true? thread)
                        @*active-threads*)
-              (. (first @*active-threads*)
+              (. #^Thread (first @*active-threads*)
                  stop))))
          
          :else
