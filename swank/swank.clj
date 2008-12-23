@@ -8,7 +8,7 @@
 ;;; See README file for more information about installation
 ;;;
 
-(ns swank
+(ns swank.swank
   (:use (swank core)
         (swank.core connection server)
         (swank.util.concurrent thread))
