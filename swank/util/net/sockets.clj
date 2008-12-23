@@ -1,7 +1,7 @@
 (ns swank.util.net.sockets
   (:use (swank util)
         (swank.util.concurrent thread))
-  (:import (java.net ServerSocket Socket InetAddress)))
+  (:import (java.net ServerSocket Socket SocketException InetAddress)))
 
 (defn socket-server
   ([port handle-socket]
@@ -11,6 +11,16 @@
          (with-open [server server]
            (loop []
              (when-not (.isClosed server)
-               (when (handle-socket (.accept server))
-                 (recur))))))))
+               (try
+                (when (handle-socket (.accept server))
+                  (recur))
+                (catch SocketException e 
+                  (.close server)))))))))
   {:tag ServerSocket})
+
+(defn close-socket
+  "Cleanly shutdown and close the socket."
+  ([#^Socket s]
+     (.shutdownInput s)
+     (.shutdownOutput s)
+     (.close s)))
