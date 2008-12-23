@@ -271,10 +271,13 @@
   (let [sym-name (read-from-string name)
         sym-var (ns-resolve (maybe-ns *current-package*) sym-name)]
     (when-let [meta (and sym-var (meta sym-var))]
-      (if-let [path (or (slime-find-file-in-paths (:file meta) (slime-search-paths))
-			(slime-find-file-in-paths (str (namespace-to-path (:ns meta))
-                                           File/separator
-                                           (:file meta)) (slime-search-paths)))]
+      (if-let [path (or
+                     ;; Check first check using full namespace
+                     (slime-find-file-in-paths (str (namespace-to-path (:ns meta))
+                                                       File/separator
+                                                       (:file meta)) (slime-search-paths))
+                     ;; Otherwise check using just the filename
+                     (slime-find-file-in-paths (:file meta) (slime-search-paths)))]
         `((~(str "(defn " (:name meta) ")")
            (:location
             ~path
