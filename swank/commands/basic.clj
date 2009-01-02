@@ -305,4 +305,4 @@
 (defslimefn frame-catch-tags-for-emacs [n] nil)
 (defslimefn frame-locals-for-emacs [n] nil)
 
-(defslimefn create-repl [target] 't)
+(defslimefn create-repl [target] '("user" user))
