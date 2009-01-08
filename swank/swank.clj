@@ -24,11 +24,17 @@
   (let [control
         (dothread-swank
           (thread-set-name "Swank Control Thread")
-          (control-loop conn))
+          (try
+           (control-loop conn)
+           (catch java.net.SocketException e
+             (dosync (alter *connections* disj conn)))))
         read
         (dothread-swank
           (thread-set-name "Read Loop Thread")
-          (read-loop conn control))]
+          (try 
+           (read-loop conn control)
+           (catch java.net.SocketException e)
+           (catch NumberFormatException e)))]
     (dosync
      (ref-set (conn :control-thread) control)
      (ref-set (conn :read-thread) read))))
@@ -44,3 +50,8 @@
                        (simple-announce port))
                      connection-serve
                      opts))))
+
+(defn stop-server
+  "stop the server"
+  []
+  (close-server))

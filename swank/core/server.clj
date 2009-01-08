@@ -13,7 +13,8 @@
 ;;  - Creates swank.core.connections
 ;;  - Spins up new threads
 
-(def *connections* (ref []))
+(def *connections* (ref #{}))
+(def *ss* (ref nil))
 
 (defn- slime-secret
   "Load the data from the secret file. Returns nil if secret file
@@ -63,8 +64,18 @@
   ([port announce-fn connection-serve opts]
      (let [ss (socket-server port #(socket-serve connection-serve % opts))
            local-port (.getLocalPort ss)]
+       (dosync (ref-set *ss* ss))
        (announce-fn local-port)
        local-port)))
+
+(defn close-server
+  "Shuts down all sockets"
+  []
+  (dosync (doseq [s (seq @*connections*)]
+            (send-off (agent (:socket s)) close-socket)))
+  (.close @*ss*)
+  (dosync
+   (ref-set *ss* nil)))
 
 ;; Announcement functions
 (defn simple-announce [port]
