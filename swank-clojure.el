@@ -72,7 +72,7 @@ swank-clojure-java-path) if non-nil."
     (when (boundp 'slime-protocol-version)
       (format "(swank.swank/ignore-protocol-version %S)\n\n" slime-protocol-version))
     "(swank.swank/start-server %S :encoding %S)\n\n")
-   (concat "file:///" swank-clojure-path)
+   (concat "file:///" swank-clojure-path "/swank-clojure.jar")
    file
    (format "%s" encoding)))
 
