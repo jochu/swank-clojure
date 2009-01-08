@@ -9,6 +9,7 @@
 ;;;
 
 (ns swank.swank
+  (:gen-class)
   (:use (swank core)
         (swank.core connection server)
         (swank.util.concurrent thread))

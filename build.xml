@@ -66,7 +66,6 @@
 <!--       <fileset dir="${src}" includes="**/*.clj"/> -->
       <fileset dir="${build}" includes="**/*.class"/>
       <manifest>
-        <attribute name="Main-Class" value="swank.standalone"/>
         <attribute name="Class-Path" value="."/>
       </manifest>
     </jar>
