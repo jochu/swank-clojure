@@ -71,8 +71,8 @@
 (defn close-server
   "Shuts down all sockets"
   []
-  (dosync (doseq [s (seq @*connections*)]
-            (send-off (agent (:socket s)) close-socket)))
+  (doseq [s (seq @*connections*)]
+    (close-socket (:socket s)))
   (.close @*ss*)
   (dosync
    (ref-set *ss* nil)))
