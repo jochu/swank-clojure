@@ -1,42 +1,5 @@
 Copyright (C) 2008 Jeffrey Chu
 
-*** FORK NOTE ****
-
-This fork of Jeffrey Chu's swank-clojure includes the following new features:
-
-1. AOT compile swank-clojure into a jar file.
-
-2. Can now stop and start the server more reliably outside of
-   emacs. The purpose is to allow swank-clojure to be incorporated
-   into Clojure server apps that can stop and start swank. If using
-   this feature, connect from emacs using "M-x slime-connect" instead
-   of "M-x slime" to interact with the running app. Disconnect with
-   "M-x slime-disconnect" or from the REPL, hit comma followed by
-   "disconnect". Disconnecting rather than quitting leaves the app
-   running.
-
-   Your app can start the swank server something like:
-
-       (swank.swank/ignore-protocol-version "2009-01-01")
-       (clojure.main/with-bindings
-         (swank.swank/start-server "/dev/null" :encoding "iso-latin-1-unix"
-                                   :port 7000))
-
-   Your app can stop the swank server using:
-
-       (swank.swank/stop-server)
-
-3. A stand-alone swank server is included in standalone.clj. It may be
-   useful as a long-running REPL that different instances of emacs
-   connect to. Run using:
-
-       java -cp /path/to/clojure.jar:/path/to/swank-clojure.jar swank.standalone ARGS
-
-
--Craig McDaniel
-
-*** END FORK NOTE ***
-
 This file is licensed under the terms of the GNU General Public
 License as distributed with Emacs (press C-h C-c to view it).
 
