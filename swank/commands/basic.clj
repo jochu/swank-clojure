@@ -124,7 +124,7 @@
               )))))))
 
 (defslimefn compile-file-for-emacs
-  ([file-name load?]
+  ([file-name load? compile-options]
      (when load?
        (compile-file-for-emacs* file-name))))
 
