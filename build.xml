@@ -46,6 +46,7 @@
       <arg value="swank.util.concurrent.mbox"/>
       <arg value="swank.util.net.sockets"/>
       <arg value="swank.commands.inspector"/>
+      <arg value="swank.commands.trace"/>
       <arg value="swank.commands.indent"/>
       <arg value="swank.commands.contrib"/>
       <arg value="swank.commands.basic"/>
