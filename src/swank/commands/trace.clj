@@ -68,4 +68,6 @@
 
 (defslimefn swank-toggle-trace [string]
   (let [sym (resolve (symbol string))]
+    (when (nil? sym)
+      (throw (Exception. (str "cannot resolve " string))))
     (trace-aux (var-get sym) sym)))
