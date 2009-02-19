@@ -98,8 +98,9 @@
              :short-message ~(.toString t)))
 
 (defn- exception-causes [#^Throwable t]
-  (lazy-cons t (when-let [cause (.getCause t)]
-                 (exception-causes cause))))
+  (lazy-seq
+   (cons t (when-let [cause (.getCause t)]
+             (exception-causes t)))))
 
 (defn- compile-file-for-emacs*
   "Compiles a file for emacs. Because clojure doesn't compile, this is
@@ -195,7 +196,7 @@
    (let [[sym-ns sym-name] (symbol-name-parts symbol-string)
          ns (if sym-ns (maybe-alias (symbol sym-ns) package) (maybe-ns package))
          vars (if sym-ns (vals (ns-publics ns)) (filter var? (vals (ns-map ns))))
-         matches (sort (vars-with-prefix sym-name vars))]
+         matches (seq (sort (vars-with-prefix sym-name vars)))]
      (if sym-ns
        (list (map (partial str sym-ns "/") matches)
              (if matches

@@ -33,10 +33,10 @@
                (filter (comp var? val) (mapcat ns-map nss)))))
 
 (defn- every-other [coll]
-  (when coll
-    (lazy-cons
-     (first coll)
-     (every-other (drop 2 coll)))))
+  (lazy-seq
+   (when (seq coll)
+     (cons (first coll)
+           (every-other (drop 2 coll))))))
 
 (defn- update-indentation-delta
   "Update the cache and return the changes in a (symbol '. indent) list.
@@ -46,20 +46,20 @@
      (let [cache-val @cache]
        (flet [(fn in-cache? [[sym var]]
                 (let [indent (var-indentation var)]
-                  (when indent
+                  (when (seq indent)
                     (when-not (= (cache-val sym) indent)
                       (list sym indent)))))
               (fn considerations-for [nss]
                 (let [vars (filter (comp var? val) (mapcat ns-map nss))]
                   (mapcat in-cache? vars)))]
          (if force
-           (when-let [updates (considerations-for (all-ns))]
+           (when-let [updates (seq (considerations-for (all-ns)))]
              (dosync (apply alter cache assoc updates))
              (every-other (rest updates)))
            (let [ns (maybe-ns *current-package*)
                  in-ns? (fn [[sym var]] (and (var? var) (= ns ((meta var) :ns))))]
              (when ns
-               (when-let [updates (filter identity (considerations-for (list ns)))]
+               (when-let [updates (seq (filter identity (considerations-for (list ns))))]
                  (dosync (apply alter cache assoc updates))
                  (every-other (rest updates))))))))))
 
@@ -68,7 +68,7 @@
    If force is true, then start again without considering the old cache."
   ([conn force]
      (let [cache (conn :indent-cache)]
-       (let [delta (update-indentation-delta cache force)]
+       (let [delta (seq (update-indentation-delta cache force))]
          (dosync
           (ref-set (conn :indent-cache-pkg) (hash (all-ns)))
           (when delta

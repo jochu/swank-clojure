@@ -31,7 +31,7 @@
   ([item coll] (position item coll 0))
   ([item coll start]
      (loop [coll (drop start coll), i start]
-       (when coll
+       (when (seq coll)
          (if (= (first coll) item)
            i
            (recur (rest coll) (inc i))))))

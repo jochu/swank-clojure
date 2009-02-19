@@ -52,7 +52,7 @@
 
 (defn eval-in-emacs-package [form]
   (with-emacs-package
-    (eval form)))
+   (eval form)))
 
 
 (defn eval-from-control
@@ -67,8 +67,9 @@
   ([] (continuously (eval-from-control))))
 
 (defn- exception-causes [#^Throwable t]
-  (lazy-cons t (when-let [cause (.getCause t)]
-                 (exception-causes cause))))
+  (lazy-seq
+   (cons t (when-let [cause (.getCause t)]
+             (exception-causes cause)))))
 
 (defn- debug-quit-exception? [t]
   (some #(identical? *debug-quit-exception* %) (exception-causes t)))
@@ -131,7 +132,7 @@
      (when (debug-quit-exception? t)
        (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id))
        (throw t))
-     
+
      ;; start sldb, don't bother here because you can't actually recover with java
      (invoke-debugger t id)
      ;; reply with abort
@@ -227,7 +228,7 @@
          (let [[thread & args] args]
            (dosync
             (when (and (true? thread)
-                       @*active-threads*)
+                       (seq @*active-threads*))
               (. #^Thread (first @*active-threads*)
                  stop))))
          
