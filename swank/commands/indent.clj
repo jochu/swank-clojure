@@ -51,20 +51,6 @@
                '.
                body-position)))))
 
-(defn- var-indentations-in-ns
-  "Find the var indentations representation for all the given
-   namespaces"
-  ([ns & more-ns]
-     (let [vars (mapcat (comp vals ns-interns) (cons ns more-ns))]
-       (remove nil? (map var-indent-representation vars)))))
-
-;; TODO - make this readable
-(defn- every-other [coll]
-  (lazy-seq
-   (when (seq coll)
-     (cons (first coll)
-           (every-other (drop 2 coll))))))
-
 (defn- get-cache-update-for-var
   "Checks whether a given var needs to be updated in a cache. If it
    needs updating, return [var-name var-indentation-representation].
@@ -78,10 +64,7 @@
 (defn- get-cache-updates-in-namespace
   "Finds all cache updates needed within a namespace"
   ([find-in-cache ns]
-     (remove nil? (map (partial get-cache-update-for-var find-in-cache) (vals (ns-interns ns)))))
-  ([find-in-cache ns & more-ns]
-     (mapcat (partial get-cache-updates-in-namespace find-in-cache)
-             (cons ns more-ns))))
+     (remove nil? (map (partial get-cache-update-for-var find-in-cache) (vals (ns-interns ns))))))
 
 (defn- update-indentation-delta
   "Update the cache and return the changes in a (symbol '. indent) list.
@@ -90,7 +73,7 @@
   ([cache-ref load-all-ns?]
      (let [find-in-cache @cache-ref]
        (let [namespaces (if load-all-ns? (all-ns) [(maybe-ns *current-package*)])
-             updates (apply (partial get-cache-updates-in-namespace find-in-cache) namespaces)]
+             updates (mapcat (partial get-cache-updates-in-namespace find-in-cache) namespaces)]
          (when-not (empty? updates)
            (dosync (alter cache-ref into updates))
            (map second updates))))))
