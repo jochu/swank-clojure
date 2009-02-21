@@ -55,9 +55,8 @@
   "Find the var indentations representation for all the given
    namespaces"
   ([ns & more-ns]
-     (for [var (mapcat (comp vals ns-interns) (cons ns more-ns))
-           :when (var-indent-representation var)]
-       (var-indent-representation var))))
+     (let [vars (mapcat (comp vals ns-interns) (cons ns more-ns))]
+       (remove nil? (map var-indent-representation vars)))))
 
 ;; TODO - make this readable
 (defn- every-other [coll]
@@ -66,40 +65,45 @@
      (cons (first coll)
            (every-other (drop 2 coll))))))
 
+(defn- get-cache-update-for-var
+  "Checks whether a given var needs to be updated in a cache. If it
+   needs updating, return [var-name var-indentation-representation].
+   Otherwise return nil"
+  ([find-in-cache var]
+     (when-let [indent (var-indent-representation var)]
+       (let [name (:name ^var)]
+         (when-not (= (find-in-cache name) indent)
+           [name indent])))))
+
+(defn- get-cache-updates-in-namespace
+  "Finds all cache updates needed within a namespace"
+  ([find-in-cache ns]
+     (remove nil? (map (partial get-cache-update-for-var find-in-cache) (vals (ns-interns ns)))))
+  ([find-in-cache ns & more-ns]
+     (mapcat (partial get-cache-updates-in-namespace find-in-cache)
+             (cons ns more-ns))))
+
 (defn- update-indentation-delta
   "Update the cache and return the changes in a (symbol '. indent) list.
    If FORCE is true then check all symbols, otherwise only check
    symbols belonging to the buffer package"
-  ([cache force]
-     (let [cache-val @cache]
-       (flet [(fn in-cache? [[sym var]]
-                (let [indent (var-indent-representation var)]
-                  (when (seq indent)
-                    (when-not (= (cache-val sym) indent)
-                      (list sym indent)))))
-              (fn considerations-for [nss]
-                (let [vars (filter (comp var? val) (mapcat ns-map nss))]
-                  (mapcat in-cache? vars)))]
-         (if force
-           (when-let [updates (seq (considerations-for (all-ns)))]
-             (dosync (apply alter cache assoc updates))
-             (every-other (rest updates)))
-           (let [ns (maybe-ns *current-package*)
-                 in-ns? (fn [[sym var]] (and (var? var) (= ns ((meta var) :ns))))]
-             (when ns
-               (when-let [updates (seq (filter identity (considerations-for (list ns))))]
-                 (dosync (apply alter cache assoc updates))
-                 (every-other (rest updates))))))))))
+  ([cache-ref load-all-ns?]
+     (let [find-in-cache @cache-ref]
+       (let [namespaces (if load-all-ns? (all-ns) [(maybe-ns *current-package*)])
+             updates (apply (partial get-cache-updates-in-namespace find-in-cache) namespaces)]
+         (when-not (empty? updates)
+           (dosync (alter cache-ref into updates))
+           (map second updates))))))
 
 (defn- perform-indentation-update
   "Update the indentation cache in connection and update emacs.
    If force is true, then start again without considering the old cache."
   ([conn force]
      (let [cache (conn :indent-cache)]
-       (let [delta (seq (update-indentation-delta cache force))]
+       (let [delta (update-indentation-delta cache force)]
          (dosync
           (ref-set (conn :indent-cache-pkg) (hash (all-ns)))
-          (when delta
+          (when (seq delta)
             (send-to-emacs `(:indentation-update ~delta))))))))
 
 (defn- sync-indentation-to-emacs
