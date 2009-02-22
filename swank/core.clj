@@ -6,12 +6,12 @@
   (:require (swank.util.concurrent [mbox :as mb])))
 
 ;; Protocol version
-(def *protocol-version* (ref nil))
+(defonce *protocol-version* (ref nil))
 
 ;; Emacs packages
 (def *current-package*)
 
-(def *active-threads* (ref ()))
+(defonce *active-threads* (ref ()))
 
 (defn maybe-ns [package]
   (cond
@@ -38,7 +38,7 @@
      ~@body))
 
 ;; Exceptions for debugging
-(def *debug-quit-exception* (Exception. "Debug quit"))
+(defonce *debug-quit-exception* (Exception. "Debug quit"))
 (def #^Throwable *current-exception*)
 
 ;; Handle Evaluation

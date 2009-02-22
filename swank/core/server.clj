@@ -13,7 +13,7 @@
 ;;  - Creates swank.core.connections
 ;;  - Spins up new threads
 
-(def *connections* (ref []))
+(defonce *connections* (ref []))
 
 (defn- slime-secret
   "Load the data from the secret file. Returns nil if secret file

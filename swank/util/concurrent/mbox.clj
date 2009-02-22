@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [send get]))
 
 ;; Holds references to the mailboxes (message queues)
-(def *mailboxes* (ref {}))
+(defonce *mailboxes* (ref {}))
 
 (defn get
   "Returns the mailbox for a given id. Creates one if one does not
