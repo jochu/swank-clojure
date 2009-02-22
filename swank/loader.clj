@@ -57,6 +57,27 @@
   ([]
      (reduce + (map file-last-modified (swank-source-files *swank-source-path*)))))
 
+(defn delete-file-recursive [& paths]
+  (when-not (empty? paths)
+    (let [f #^File (first paths)]
+      (if (and f (.exists f))
+        (if (.isDirectory f)
+          (if-let [files (seq (.listFiles f))]
+            (recur (concat files paths))
+            (do
+              (.delete f)
+              (recur (rest paths))))
+          (do
+            (.delete f)
+            (recur (rest paths))))
+        (recur (rest paths))))))
+
+(defn clean-up []
+  (let [current-path (File. *swank-compile-path* (str (swank-version)))]
+    (doseq [compiled-path (.listFiles *swank-compile-path*)
+            :when (not= current-path compiled-path)]
+      (delete-file-recursive compiled-path))))
+
 (defn swank-ns? [ns]
   (.startsWith (name (ns-name ns)) "swank."))
 
