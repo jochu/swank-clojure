@@ -97,11 +97,6 @@
              :references nil
              :short-message ~(.toString t)))
 
-(defn- exception-causes [#^Throwable t]
-  (lazy-seq
-   (cons t (when-let [cause (.getCause t)]
-             (exception-causes t)))))
-
 (defn- compile-file-for-emacs*
   "Compiles a file for emacs. Because clojure doesn't compile, this is
    simple an alias for load file w/ timing and messages. This function

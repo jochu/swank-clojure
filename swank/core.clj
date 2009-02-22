@@ -66,10 +66,10 @@
    evaluates them (will block if no mbox message is available)."
   ([] (continuously (eval-from-control))))
 
-(defn- exception-causes [#^Throwable t]
+(defn exception-causes [#^Throwable t]
   (lazy-seq
-   (cons t (when-let [cause (.getCause t)]
-             (exception-causes cause)))))
+    (cons t (when-let [cause (.getCause t)]
+              (exception-causes cause)))))
 
 (defn- debug-quit-exception? [t]
   (some #(identical? *debug-quit-exception* %) (exception-causes t)))
