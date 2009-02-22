@@ -259,7 +259,10 @@
 
 (defn- slime-search-paths []
   (concat (get-path-prop "user.dir" "java.class.path" "sun.boot.class.path")
-          (map #(.getPath #^java.net.URL %) (.getURLs (clojure.lang.RT/baseLoader)))))
+          (let [loader (clojure.lang.RT/baseLoader)]
+            (when (instance? java.net.URLClassLoader loader)
+              (map #(.getPath #^java.net.URL %)
+                   (.getURLs #^java.net.URLClassLoader (cast java.net.URLClassLoader (clojure.lang.RT/baseLoader))))))))
 
 (defn- namespace-to-path [ns]
   (let [#^String ns-str (name (ns-name ns))]
