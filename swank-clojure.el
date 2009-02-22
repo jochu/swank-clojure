@@ -62,19 +62,23 @@ swank-clojure-java-path) if non-nil."
   :type 'list
   :group 'swank-clojure)
 
+(defcustom swank-clojure-compile-p t
+  "Whether or not to instruct swank-clojure to swank files. Set
+  to nil if it's causing you problems."
+  :type 'boolean
+  :group 'swank-clojure)
 
 
 (defun swank-clojure-init (file encoding)
-  (format
-   (concat
-    "(add-classpath %S)\n\n"
-    "(require 'swank.swank)\n\n"
-    (when (boundp 'slime-protocol-version)
-      (format "(swank.swank/ignore-protocol-version %S)\n\n" slime-protocol-version))
-    "(swank.swank/start-server %S :encoding %S)\n\n")
-   (concat "file:///" swank-clojure-path)
-   file
-   (format "%s" encoding)))
+  (concat
+   (format "(add-classpath %S)\n\n" (concat "file:///" swank-clojure-path))
+   (when swank-clojure-compile-p
+     "(require 'swank.loader)\n\n(swank.loader/init)\n\n")
+   "(require 'swank.swank)\n\n"
+   (when (boundp 'slime-protocol-version)
+     (format "(swank.swank/ignore-protocol-version %S)\n\n" slime-protocol-version))
+   (format "(swank.swank/start-server %S :encoding %S)\n\n"
+           file (format "%s" encoding))))
 
 (defun swank-clojure-find-package ()
   (let ((regexp "^(\\(clojure.core/\\)?\\(in-\\)?ns\\s-+[:']?\\([^()]+\\>\\)"))
