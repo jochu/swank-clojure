@@ -19,11 +19,11 @@
      [... & body]
    If no & body is found, nil will be returned"
   ([args]
-     (when (seq? args)
-      (when-let [amp-position (position '& args)]
-        (when-let [body-position (position 'body args)]
-          (when (= (inc amp-position) body-position)
-            amp-position))))))
+     (when (coll? args)
+       (when-let [amp-position (position '& args)]
+         (when-let [body-position (position 'body args)]
+           (when (= (inc amp-position) body-position)
+             amp-position))))))
 
 (defn- find-arglists-body-position
   "Find the smallest body position from an arglist"
