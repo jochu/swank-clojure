@@ -19,10 +19,11 @@
      [... & body]
    If no & body is found, nil will be returned"
   ([args]
-     (when-let [amp-position (position '& args)]
-       (when-let [body-position (position 'body args)]
-         (when (= (inc amp-position) body-position)
-           amp-position)))))
+     (when (seq? args)
+      (when-let [amp-position (position '& args)]
+        (when-let [body-position (position 'body args)]
+          (when (= (inc amp-position) body-position)
+            amp-position))))))
 
 (defn- find-arglists-body-position
   "Find the smallest body position from an arglist"
@@ -74,7 +75,7 @@
      (let [find-in-cache @cache-ref]
        (let [namespaces (if load-all-ns? (all-ns) [(maybe-ns *current-package*)])
              updates (mapcat (partial get-cache-updates-in-namespace find-in-cache) namespaces)]
-         (when-not (empty? updates)
+         (when (seq updates)
            (dosync (alter cache-ref into updates))
            (map second updates))))))
 
