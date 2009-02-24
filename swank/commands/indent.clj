@@ -20,8 +20,8 @@
    If no & body is found, nil will be returned"
   ([args]
      (when (coll? args)
-       (when-let [amp-position (position '& args)]
-         (when-let [body-position (position 'body args)]
+       (when-let [amp-position (position '#{&} args)]
+         (when-let [body-position (position '#{body clauses} args)]
            (when (= (inc amp-position) body-position)
              amp-position))))))
 
