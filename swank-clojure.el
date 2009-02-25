@@ -62,7 +62,7 @@ swank-clojure-java-path) if non-nil."
   :type 'list
   :group 'swank-clojure)
 
-(defcustom swank-clojure-compile-p t
+(defcustom swank-clojure-compile-p nil
   "Whether or not to instruct swank-clojure to swank files. Set
   to nil if it's causing you problems."
   :type 'boolean
