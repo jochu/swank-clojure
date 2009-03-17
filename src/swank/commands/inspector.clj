@@ -30,7 +30,7 @@
 
 (defn print-part-to-string [value]
   (let [s (inspectee-title value)
-        pos (position value @*inspector-history*)]
+        pos (position #{value} @*inspector-history*)]
     (if pos
       (str "#" pos "=" s)
       s)))
@@ -267,10 +267,10 @@
 
 (defslimefn inspector-next []
   (with-emacs-package
-   (let [pos (position @*inspectee* @*inspector-history*)]
-     (cond
-      (= (inc pos) (count @*inspector-history*)) nil
-      :else (inspect-object (get @*inspector-history* (inc pos)))))))
+    (let [pos (position #{@*inspectee*} @*inspector-history*)]
+      (cond
+       (= (inc pos) (count @*inspector-history*)) nil
+       :else (inspect-object (get @*inspector-history* (inc pos)))))))
 
 (defslimefn inspector-reinspect []
   (inspect-object @*inspectee*))

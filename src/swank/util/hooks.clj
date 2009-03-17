@@ -1,7 +1,7 @@
 (ns swank.util.hooks)
 
 (defmacro defhook [name & hooks]
-  `(def ~name (ref (list ~@hooks))))
+  `(defonce ~name (ref (list ~@hooks))))
 
 ;;;; Hooks
 (defn add-hook [place function]

@@ -62,19 +62,24 @@ swank-clojure-java-path) if non-nil."
   :type 'list
   :group 'swank-clojure)
 
+(defcustom swank-clojure-compile-p nil
+  "Whether or not to instruct swank-clojure to swank files. Set
+  to nil if it's causing you problems."
+  :type 'boolean
+  :group 'swank-clojure)
 
 
 (defun swank-clojure-init (file encoding)
-  (format
-   (concat
-    "(add-classpath %S)\n\n"
-    "(require 'swank.swank)\n\n"
-    (when (boundp 'slime-protocol-version)
-      (format "(swank.swank/ignore-protocol-version %S)\n\n" slime-protocol-version))
-    "(swank.swank/start-server %S :encoding %S)\n\n")
-   (concat "file:///" swank-clojure-path "/swank-clojure.jar")
-   file
-   (format "%s" encoding)))
+  (concat
+   (format "(add-classpath %S)\n\n" (concat "file:///" swank-clojure-path
+                                            "/swank-clojure.jar"))
+   (when swank-clojure-compile-p
+     "(require 'swank.loader)\n\n(swank.loader/init)\n\n")
+   "(require 'swank.swank)\n\n"
+   (when (boundp 'slime-protocol-version)
+     (format "(swank.swank/ignore-protocol-version %S)\n\n" slime-protocol-version))
+   (format "(swank.swank/start-server %S :encoding %S)\n\n"
+           file (format "%s" encoding))))
 
 (defun swank-clojure-find-package ()
   (let ((regexp "^(\\(clojure.core/\\)?\\(in-\\)?ns\\s-+[:']?\\([^()]+\\>\\)"))
@@ -139,8 +144,8 @@ will be used over paths too.)"
     (setq lisp-indent-function 'clojure-indent-function)
 
     ;; set paredit keys
-    (when (featurep 'clojure-paredit)
-      (define-key slime-repl-mode-map "{" 'paredit-open-brace)
-      (define-key slime-repl-mode-map "}" 'paredit-close-brace))))
+    (when (and (featurep 'paredit) paredit-mode (>= paredit-version 21))
+      (define-key slime-repl-mode-map "{" 'paredit-open-curly)
+      (define-key slime-repl-mode-map "}" 'paredit-close-curly))))
 
 (provide 'swank-clojure)

@@ -91,7 +91,7 @@
 
 (defslimefn completions [string package]
   (let [matches (sort (compound-complete string package))
-        longest-comp (if matches
+        longest-comp (if (seq matches)
                        (let [last-char (fn [#^String string]
                                          ;; only for non-empty strings
                                          (.charAt string

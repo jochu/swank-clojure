@@ -26,13 +26,14 @@
      (first (filter pred coll))))
 
 (defn position
-  "Finds the first position of item within col. Returns nil if not
-   found. Optionally provide a start offset to search from."
-  ([item coll] (position item coll 0))
-  ([item coll start]
+  "Finds the first position of an item that matches a given predicate
+   within col. Returns nil if not found. Optionally provide a start
+   offset to search from."
+  ([pred coll] (position pred coll 0))
+  ([pred coll start]
      (loop [coll (drop start coll), i start]
-       (when coll
-         (if (= (first coll) item)
+       (when (seq coll)
+         (if (pred (first coll))
            i
            (recur (rest coll) (inc i))))))
   {:tag Integer})

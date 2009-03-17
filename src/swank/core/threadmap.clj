@@ -2,8 +2,8 @@
   (:use (swank util)
         (swank.util.concurrent thread)))
 
-(def *thread-map-next-id* (ref 1))
-(def *thread-map* (ref {}))
+(defonce *thread-map-next-id* (ref 1))
+(defonce *thread-map* (ref {}))
 
 (defn- thread-map-clean []
   (doseq [[id t] @*thread-map*]
