@@ -62,7 +62,6 @@
 
   <target name="jar" description="Create jar file." depends="compile_clojure">
     <jar jarfile="${jarfile}">
-      <path location="CPL.TXT"/>
 <!-- uncomment to be able to pop to swank-clojure source code from repl -->
 <!--       <fileset dir="${src}" includes="**/*.clj"/> -->
       <fileset dir="${build}" includes="**/*.class"/>
