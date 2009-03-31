@@ -4,10 +4,10 @@
 ;;;; trace entry/exit functions
 
 (defn trace-entry [id nm args]
-  (println (str "TRACE " id ": " nm " called with " (pr-str args))))
+  (.println System/err (str "TRACE " id ": " nm " called with " (pr-str args))))
 
 (defn trace-exit [id nm returns]
-  (println (str "TRACE " id ": " nm " returned " (pr-str returns))))
+  (.println System/err (str "TRACE " id ": " nm " returned " (pr-str returns))))
 
 ;;;; wrapper to call the tracing functions 
 
