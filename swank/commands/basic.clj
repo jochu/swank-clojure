@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [load-file])
   (:use (swank util commands core)
         (swank.util.concurrent thread)
-        (swank.util string clojure))
+        (swank.util string clojure pprint))
   (:require (swank.util [sys :as sys]))
   (:import (java.io StringReader File)
            (java.util.zip ZipFile)
@@ -63,7 +63,7 @@
 ;;;; Macro expansion
 
 (defn- apply-macro-expander [expander string]
-  (pr-str (expander (read-from-string string))))
+  (pretty-pr-code (expander (read-from-string string))))
 
 (defslimefn swank-macroexpand-1 [string]
   (apply-macro-expander macroexpand-1 string))
