@@ -1,5 +1,4 @@
-(ns swank.util.pprint)
-
+(ns swank.clj-contrib.pprint)
 
 (def
  #^{:private true}
