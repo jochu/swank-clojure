@@ -126,7 +126,12 @@
        ;; swank function not defined, abort
        (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id))))
    (catch Throwable t
+     ;; Thread/interrupted clears this thread's interrupted status; if
+     ;; Thread.stop was called on us it may be set and will cause an
+     ;; InterruptedException in one of the send-to-emacs calls below
+     (Thread/interrupted)
      (set! *e t)
+
      ;; (.printStackTrace t #^java.io.PrintWriter *err*)
      ;; Throwing to top level, let emacs know we're aborting
      (when (debug-quit-exception? t)
@@ -173,7 +178,9 @@
   ([conn]
      ;; TODO - check if an existing repl-agent is still active & doesn't have errors
      (dosync
-      (or @(conn :repl-thread)
+      (or (when-let [conn-repl-thread @(conn :repl-thread)]
+            (when (.isAlive #^Thread conn-repl-thread)
+              conn-repl-thread))
           (ref-set (conn :repl-thread)
                    (spawn-repl-thread conn))))))
 
@@ -227,10 +234,9 @@
          (= action :emacs-interrupt)
          (let [[thread & args] args]
            (dosync
-            (when (and (true? thread)
-                       (seq @*active-threads*))
-              (. #^Thread (first @*active-threads*)
-                 stop))))
+            (cond
+              (and (true? thread) (seq @*active-threads*)) (.stop #^Thread (first @*active-threads*))
+              (= thread :repl-thread) (.stop #^Thread @(conn :repl-thread)))))
          
          :else
          nil))))
