@@ -1,4 +1,4 @@
-(ns swank.commands.trace
+(ns swank.clj-contrib.trace
   (:use (swank commands)))
 
 ;;;; trace entry/exit functions

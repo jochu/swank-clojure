@@ -72,7 +72,7 @@ swank-clojure-java-path) if non-nil."
 (defun swank-clojure-init (file encoding)
   (concat
    (format "(add-classpath %S)\n\n" (concat "file:///" swank-clojure-path
-                                            "/swank-clojure.jar"))
+                                            "swank-clojure.jar"))
    (when swank-clojure-compile-p
      "(require 'swank.loader)\n\n(swank.loader/init)\n\n")
    "(require 'swank.swank)\n\n"

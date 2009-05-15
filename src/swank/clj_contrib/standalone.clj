@@ -1,4 +1,4 @@
-(ns swank.standalone
+(ns swank.clj-contrib.standalone
   (:gen-class)
   (:use swank.swank)
   (:require clojure.main))
