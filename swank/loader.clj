@@ -52,15 +52,6 @@
   (map #(file-name-to-swank-package-sym (relative-path-name *swank-source-path* %))
        (swank-source-files *swank-source-path*)))
 
-(defn clojure-version
-  "A likely bad way of calculation version number for clojure"
-  ([]
-     (when-let [r (.getResource (clojure.lang.RT/baseLoader) "clojure.jar")]
-       (let [f (File. (.getFile r))]
-         (if (.exists f)
-           (file-last-modified f)
-           0)))))
-
 (defn swank-version
   "A likely bad way of calculating a version number for swank clojure"
   ([]
