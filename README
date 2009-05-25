@@ -1,45 +1,35 @@
+# Swank Clojure
+
+Swank-clojure is an adapter that lets you use SLIME (the Superior Lisp
+Interaction Mode for Emacs) with Clojure.
+
+Installation
+
+1. Install clojure-mode.el. Either use ELPA[1] or get it manually
+   install from source[2].
+        
+2. Invoke M-x clojure-install and follow the directions given. This
+   will download and configure swank-clojure as well as other
+   dependencies.
+
+3. If you want to use SLIME with Common Lisp or another Lisp
+   implementation, add your default lisp back in:
+
+    ;; Example for sbcl to put in your .emacs:
+    (add-to-list 'slime-lisp-implementations '(sbcl ("sbcl")))
+
+4. Start slime!
+
+    M-x slime
+
+  Or if you have alternate implementations configured:
+
+    M-- M-x slime clojure
+
 Copyright (C) 2008 Jeffrey Chu
 
 This file is licensed under the terms of the GNU General Public
 License as distributed with Emacs (press C-h C-c to view it).
 
-Installation
-
-  1. Download & install CVS/SVN versions of clojure [1] and slime [2].
-        
-  2. Add swank-clojure to your .emacs file:
-
-       (add-to-list 'load-path "/path/to/swank-clojure")
-       (require 'swank-clojure-autoload)
-
-  3. Customize the path to your clojure jar file. Optionally, also
-     customize other classpath information. [3]
-
-       (require 'swank-clojure-autoload)       
-       (swank-clojure-config
-         (setq swank-clojure-jar-path "/path/to/clojure.jar")
-         (setq swank-clojure-extra-classpaths (list "/path/to/extra/classpaths")))
-
-         or
-
-       (require 'swank-clojure)
-       M-x customize-group swank-clojure
-
-  4. Optionally, add your default lisp implementation back into slime
-     (add to .emacs):
-
-       Example for sbcl:
-         (add-to-list 'slime-lisp-implementations '(sbcl ("sbcl")))
-
-  5. Start slime! 
-
-       M-x slime
-
-       Or if you did step 4:
-          M-- M-x slime clojure
-
-
-[1] Clojure SVN: http://sourceforge.net/svn/?group_id=137961
-[2] Slime CVS: http://common-lisp.net/project/slime/#downloading
-[3] If you want to configure swank-clojure to use a custom binary or
-    sh-script, you may configure swank-clojure-binary instead.
+[1] - http://tromey.com/elpa
+[2] - http://github.com/jochu/clojure-mode
