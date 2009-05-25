@@ -71,7 +71,6 @@ swank-clojure-java-path) if non-nil."
 
 (defun swank-clojure-init (file encoding)
   (concat
-   (format "(add-classpath %S)\n\n" (concat "file:///" swank-clojure-path))
    (when swank-clojure-compile-p
      "(require 'swank.loader)\n\n(swank.loader/init)\n\n")
    "(require 'swank.swank)\n\n"
@@ -118,7 +117,9 @@ will be used over paths too.)"
                    (swank-clojure-concat-paths swank-clojure-library-paths)))
          "-classpath"
          (swank-clojure-concat-paths
-          (cons swank-clojure-jar-path swank-clojure-extra-classpaths))
+          (append (list swank-clojure-jar-path
+                        swank-clojure-path)
+                  swank-clojure-extra-classpaths))
          "clojure.main")
         (let ((init-opts '()))
           (dolist (init-file swank-clojure-init-files init-opts) 
