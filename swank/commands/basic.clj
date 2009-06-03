@@ -267,6 +267,13 @@
         (.replace \- \_)
         (.replace \. \/))))
 
+(defn source-location-for-frame [frame]
+  (let [line     (.getLineNumber frame)
+        frame-ns ((re-find #"(.*?)\$" (.getClassName frame)) 1)
+        filename (str (namespace-to-path (symbol frame-ns)) File/separator (.getFileName frame))
+        path     (slime-find-file-in-paths filename (slime-search-paths))]
+    `(:location ~path (:line ~line) nil)))
+
 (defslimefn find-definitions-for-emacs [name]
   (let [sym-name (read-from-string name)
         sym-var (ns-resolve (maybe-ns *current-package*) sym-name)]
@@ -304,5 +311,9 @@
 
 (defslimefn frame-catch-tags-for-emacs [n] nil)
 (defslimefn frame-locals-for-emacs [n] nil)
+
+(defslimefn frame-source-location-for-emacs [n]
+  (source-location-for-frame
+     (nth (.getStackTrace *current-exception*) n)))
 
 (defslimefn create-repl [target] '("user" user))
