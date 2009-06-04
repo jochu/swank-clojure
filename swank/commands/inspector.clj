@@ -74,7 +74,8 @@
      (string? obj) :string
      (seq? obj) :seq
      (instance? Class obj) :class
-     (instance? clojure.lang.Namespace obj) :namespace)))
+     (instance? clojure.lang.Namespace obj) :namespace
+     (instance? clojure.lang.ARef obj) :aref)))
 
 (defn inspect-meta-information [obj]
   (when (> (count (meta obj)) 0)
@@ -153,6 +154,9 @@
      (mapcat (fn [m]
                `("  " (:value ~m) (:newline))) meths))))
 
+(defmethod emacs-inspect :aref [#^ARef obj]
+  `("Type: " (:value ~(class obj)) (:newline)
+    "Value: " (:value ~(deref obj)) (:newline)))
 
 (defn ns-refers-by-ns [#^clojure.lang.Namespace ns]
   (categorize-by (fn [#^clojure.lang.Var v] (. v ns))
