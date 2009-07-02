@@ -80,7 +80,7 @@ swank-clojure-java-path) if non-nil."
            file (format "%s" encoding))))
 
 (defun swank-clojure-find-package ()
-  (let ((regexp "^(\\(clojure.core/\\)?\\(in-\\)?ns\\s-+[:']?\\([^()]+\\>\\)"))
+  (let ((regexp "^(\\(clojure.core/\\)?\\(in-\\)?ns\\s-+[:']?\\([^()\" \t\n]+\\>\\)"))
     (save-excursion
       (when (or (re-search-backward regexp nil t)
                 (re-search-forward regexp nil t))
