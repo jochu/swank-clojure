@@ -161,6 +161,67 @@
   ([symbol-name default] (documentation-symbol symbol-name))
   ([symbol-name] (describe-symbol* symbol-name)))
 
+;;;; Documentation
+
+(defn- briefly-describe-symbol-for-emacs [var]
+  (let [lines (fn [s] (seq (.split s (System/getProperty "line.separator"))))
+        [_ symbol-name arglists d1 d2 & __] (lines (describe-to-string var))
+        macro? (= d1 "Macro")]
+    (list :designator symbol-name
+          (cond
+            macro? :macro
+            (:arglists ^var) :function
+            :else :variable)
+          (apply str (concat arglists (if macro? d2 d1))))))
+
+(defn- make-apropos-matcher [pattern case-sensitive?]
+  (let [pattern (java.util.regex.Pattern/quote pattern)
+        pat (re-pattern (if case-sensitive?
+                          pattern
+                          (format "(?i:%s)" pattern)))]
+    (fn [var] (re-find pat (pr-str var)))))
+
+(defn- apropos-symbols [string external-only? case-sensitive? package]
+  (let [packages (or (when package [package]) (all-ns))
+        matcher (make-apropos-matcher string case-sensitive?)
+        lister (if external-only? ns-publics ns-interns)]
+    (filter matcher
+            (apply concat (map (comp (partial map second) lister)
+                               packages)))))
+
+(defn- present-symbol-before
+  "Comparator such that x belongs before y in a printed summary of symbols.
+Sorted alphabetically by namespace name and then symbol name, except
+that symbols accessible in the current namespace go first."
+  [x y]
+  (let [accessible?
+        (fn [var] (= (ns-resolve (maybe-ns *current-package*) (:name ^var))
+                     var))
+        ax (accessible? x) ay (accessible? y)]
+    (cond
+      (and ax ay) (compare (:name ^x) (:name ^y))
+      ax -1
+      ay 1
+      :else (let [nx (str (:ns ^x)) ny (str (:ns ^y))]
+              (if (= nx ny)
+                (compare (:name ^x) (:name ^y))
+                (compare nx ny))))))
+
+(defslimefn apropos-list-for-emacs
+  ([name]
+     (apropos-list-for-emacs name nil))
+  ([name external-only?]
+     (apropos-list-for-emacs name external-only? nil))
+  ([name external-only? case-sensitive?]
+     (apropos-list-for-emacs name external-only? case-sensitive? nil))
+  ([name external-only? case-sensitive? package]
+     (let [package (when package
+                     (or (find-ns (symbol package))
+                         'user))]
+       (map briefly-describe-symbol-for-emacs
+            (sort present-symbol-before
+                  (apropos-symbols name external-only? case-sensitive?
+                                   package))))))
 
 ;;;; Operator messages
 (defslimefn operator-arglist [name package]
