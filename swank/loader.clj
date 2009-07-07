@@ -55,8 +55,8 @@
 (defn swank-version
   "A likely bad way of calculating a version number for swank clojure"
   ([]
-     (+ (reduce + (map file-last-modified (swank-source-files *swank-source-path*)))
-        (clojure-version))))
+     (str (reduce + (map file-last-modified (swank-source-files *swank-source-path*)))
+	  "+" (clojure-version))))
 
 (defn delete-file-recursive [& paths]
   (when-not (empty? paths)
