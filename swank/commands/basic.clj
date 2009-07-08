@@ -164,7 +164,7 @@
 ;;;; Documentation
 
 (defn- briefly-describe-symbol-for-emacs [var]
-  (let [lines (fn [s] (seq (.split s (System/getProperty "line.separator"))))
+  (let [lines (fn [s] (seq (.split #^String s (System/getProperty "line.separator"))))
         [_ symbol-name arglists d1 d2 & __] (lines (describe-to-string var))
         macro? (= d1 "Macro")]
     (list :designator symbol-name
@@ -328,7 +328,7 @@ that symbols accessible in the current namespace go first."
         (.replace \- \_)
         (.replace \. \/))))
 
-(defn source-location-for-frame [frame]
+(defn source-location-for-frame [#^StackTraceElement frame]
   (let [line     (.getLineNumber frame)
         filename (if (.. frame getFileName (endsWith ".java"))
            (.. frame getClassName (replace \. \/)
