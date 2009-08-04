@@ -289,37 +289,23 @@ that symbols accessible in the current namespace go first."
 
 ;;;; meta dot find
 
-(defn- slime-find-file-in-dir [#^File file #^String dir]
-  (let [file-name (. file (getPath))
-        child (File. (File. dir) file-name)]
-    (or (when (.exists child)
-          `(:file ~(.getPath child)))
-        (try
-         (let [zipfile (ZipFile. dir)]
-           (when (.getEntry zipfile file-name)
-             `(:zip ~dir ~file-name)))
-         (catch Throwable e false)))))
+(defn- slime-zip-resource [#^java.net.URL resource]
+  (let [jar-connection #^java.net.JarURLConnection (.openConnection resource)]
+    (list :zip (.getFile (.getJarFileURL jar-connection)) (.getEntryName jar-connection))))
 
-(defn- slime-find-file-in-paths [#^String file paths]
-  (let [f (File. file)]
-    (if (.isAbsolute f)
-      `(:file ~file)
-      (first (filter identity (map #(slime-find-file-in-dir f %) paths))))))
+(defn- slime-file-resource [#^java.net.URL resource]
+  (list :file (.getFile resource)))
 
-(defn- get-path-prop
-  "Returns a coll of the paths represented in a system property"
-  ([prop]
-     (seq (-> (System/getProperty prop)
-              (.split File/pathSeparator))))
-  ([prop & props]
-     (lazy-cat (get-path-prop prop) (mapcat get-path-prop props))))
+(defn- slime-find-resource [#^String file]
+  (let [resource (.getResource (clojure.lang.RT/baseLoader) file)]
+    (if (= (.getProtocol resource) "jar")
+      (slime-zip-resource resource)
+      (slime-file-resource resource))))
 
-(defn- slime-search-paths []
-  (concat (get-path-prop "user.dir" "java.class.path" "sun.boot.class.path")
-          (let [loader (clojure.lang.RT/baseLoader)]
-            (when (instance? java.net.URLClassLoader loader)
-              (map #(.getPath #^java.net.URL %)
-                   (.getURLs #^java.net.URLClassLoader (cast java.net.URLClassLoader (clojure.lang.RT/baseLoader))))))))
+(defn- slime-find-file [#^String file]
+  (if (.isAbsolute (File. file))
+    (list :file file)
+    (slime-find-resource file)))
 
 (defn- namespace-to-path [ns]
   (let [#^String ns-str (name (ns-name ns))]
@@ -338,20 +324,14 @@ that symbols accessible in the current namespace go first."
              (symbol ((re-find #"(.*?)\$"
                        (.getClassName frame)) 1)))
             File/separator (.getFileName frame)))
-        path     (slime-find-file-in-paths filename (slime-search-paths))]
+        path     (slime-find-file filename)]
     `(:location ~path (:line ~line) nil)))
 
 (defslimefn find-definitions-for-emacs [name]
   (let [sym-name (read-from-string name)
         sym-var (ns-resolve (maybe-ns *current-package*) sym-name)]
     (when-let [meta (and sym-var (meta sym-var))]
-      (if-let [path (or
-                     ;; Check first check using full namespace
-                     (slime-find-file-in-paths (str (namespace-to-path (:ns meta))
-                                                       File/separator
-                                                       (:file meta)) (slime-search-paths))
-                     ;; Otherwise check using just the filename
-                     (slime-find-file-in-paths (:file meta) (slime-search-paths)))]
+      (if-let [path (slime-find-file (:file meta))]
         `((~(str "(defn " (:name meta) ")")
            (:location
             ~path
