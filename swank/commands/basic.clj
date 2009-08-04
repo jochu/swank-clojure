@@ -317,13 +317,13 @@ that symbols accessible in the current namespace go first."
 (defn source-location-for-frame [#^StackTraceElement frame]
   (let [line     (.getLineNumber frame)
         filename (if (.. frame getFileName (endsWith ".java"))
-           (.. frame getClassName (replace \. \/)
-               (substring 0 (.lastIndexOf (.getClassName frame) "."))
-               (concat (str File/separator (.getFileName frame))))
-           (str (namespace-to-path
-             (symbol ((re-find #"(.*?)\$"
-                       (.getClassName frame)) 1)))
-            File/separator (.getFileName frame)))
+                   (.. frame getClassName (replace \. \/)
+                       (substring 0 (.lastIndexOf (.getClassName frame) "."))
+                       (concat (str File/separator (.getFileName frame))))
+                   (str (namespace-to-path
+                         (symbol ((re-find #"(.*?)\$"
+                                           (.getClassName frame)) 1)))
+                        File/separator (.getFileName frame)))
         path     (slime-find-file filename)]
     `(:location ~path (:line ~line) nil)))
 
