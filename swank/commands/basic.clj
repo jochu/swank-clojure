@@ -368,4 +368,4 @@ that symbols accessible in the current namespace go first."
   (source-location-for-frame
      (nth (.getStackTrace *current-exception*) n)))
 
-(defslimefn create-repl [target] '("user" user))
+(defslimefn create-repl [target] '("user" "user"))
