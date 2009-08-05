@@ -60,7 +60,7 @@
       (catch Throwable t
         nil))))
 
-(defn potential [symbol-ns ns]
+(defn potential-completions [symbol-ns ns]
   (if symbol-ns
     (map #(str symbol-ns "/" %)
          (if-let [class (resolve-class symbol-ns)]
@@ -79,8 +79,8 @@
 (defslimefn simple-completions [symbol-string package]
   (try
    (let [[sym-ns sym-name] (symbol-name-parts symbol-string)
-         potential-names   (potential (when sym-ns (symbol sym-ns)) (ns-name (maybe-ns package)))
-         matches           (seq (sort (filter #(.startsWith #^String % symbol-string) potential-names)))]
+         potential         (potential-completions (when sym-ns (symbol sym-ns)) (ns-name (maybe-ns package)))
+         matches           (seq (sort (filter #(.startsWith #^String % symbol-string) potential)))]
      (list matches
            (if matches
              (reduce largest-common-prefix matches)
