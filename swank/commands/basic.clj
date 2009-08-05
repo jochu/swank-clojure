@@ -238,35 +238,6 @@ that symbols accessible in the current namespace go first."
 
 ;;;; Completions
 
-(defn- vars-with-prefix
-  "Filters a coll of vars and returns only those that have a given
-   prefix."
-  ([#^String prefix vars]
-     (filter #(.startsWith #^String % prefix) (map (comp name :name meta) vars))))
-
-(defn- maybe-alias [sym ns]
-  (or (resolve-ns sym (maybe-ns ns))
-      (maybe-ns ns)))
-
-(defslimefn simple-completions [symbol-string package]
-  (try
-   (let [[sym-ns sym-name] (symbol-name-parts symbol-string)
-         ns (if sym-ns (maybe-alias (symbol sym-ns) package) (maybe-ns package))
-         vars (if sym-ns (vals (ns-publics ns)) (filter var? (vals (ns-map ns))))
-         matches (seq (sort (vars-with-prefix sym-name vars)))]
-     (if sym-ns
-       (list (map (partial str sym-ns "/") matches)
-             (if matches
-               (str sym-ns "/" (reduce largest-common-prefix matches))
-               symbol-string))
-       (list matches
-             (if matches
-               (reduce largest-common-prefix matches)
-               symbol-string))))
-   (catch java.lang.Throwable t
-     (list nil symbol-string))))
-
-
 (defslimefn list-all-package-names
   ([] (map (comp str ns-name) (all-ns)))
   ([nicknames?] (list-all-package-names)))
