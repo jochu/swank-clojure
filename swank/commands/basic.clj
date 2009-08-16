@@ -28,13 +28,17 @@
   "Evaluate string, return the results of the last form as a list and
    a secondary value the last form."
   ([string]
-     (with-open [rdr (LineNumberingPushbackReader. (StringReader. string))]
-       (loop [form (read rdr false rdr), value nil, last-form nil]
-         (if (= form rdr)
-           [value last-form]
-           (recur (read rdr false rdr)
-                  (eval form)
-                  form))))))
+     (eval-region string "NO_SOURCE_FILE" 1))
+  ([string file line]
+     (with-open [rdr (proxy [LineNumberingPushbackReader] ((StringReader. string))
+		       (getLineNumber [] line))]
+       (binding [*file* file]
+	 (loop [form (read rdr false rdr), value nil, last-form nil]
+	   (if (= form rdr)
+	     [value last-form]
+	     (recur (read rdr false rdr)
+		    (eval form)
+		    form)))))))
 
 (defslimefn interactive-eval-region [string]
   (with-emacs-package
@@ -128,9 +132,20 @@
 (defslimefn load-file [file-name]
   (pr-str (clojure.core/load-file file-name)))
 
+(defn- line-at-position [file position]
+  (try
+   (binding [*in* (java.io.BufferedReader. (java.io.FileReader. file))]
+     (let [count-next-line (fn [] (inc (count (read-line))))]
+       (loop [line 1 chars (count-next-line)]
+	 (if (>= chars position)
+	   line
+	   (recur (inc line) (+ chars (count-next-line)))))))
+   (catch Exception e 1)))
+
 (defslimefn compile-string-for-emacs [string buffer position directory debug]
   (let [start (System/nanoTime)
-        ret (with-emacs-package (eval-region string))
+	line (line-at-position directory position)
+        ret (with-emacs-package (eval-region string directory line))
         delta (- (System/nanoTime) start)]
     `(:compilation-result nil ~(pr-str ret) ~(/ delta 1000000000.0))))
 
