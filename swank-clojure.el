@@ -68,6 +68,15 @@ swank-clojure-java-path) if non-nil."
   :type 'boolean
   :group 'swank-clojure)
 
+(defface swank-clojure-dim-trace-face
+  '((((class color) (background dark))
+     (:foreground "grey50"))
+    (((class color) (background light))
+     (:foreground "grey55")))
+  "Face used to dim parentheses."
+  :group 'slime-ui)
+
+(setq swank-clojure-dim-trace-face 'swank-clojure-dim-trace-face)
 
 (defun swank-clojure-init (file encoding)
   (concat
@@ -148,6 +157,23 @@ will be used over paths too.)"
       (define-key slime-repl-mode-map "{" 'paredit-open-curly)
       (define-key slime-repl-mode-map "}" 'paredit-close-curly))))
 
+;; Debugger
+
+(defun swank-clojure-dim-font-lock ()
+  "Dim irrelevant lines in Clojure debugger buffers."
+  (if (string-match "clojure" (buffer-name))
+      (font-lock-add-keywords nil
+                              '(("[0-9]+: \\(clojure\.\\(core\\|lang\\).*\\)"
+                                 1 swank-clojure-dim-trace-face)
+                                ("[0-9]+: \\(java.*\\)"
+                                 1 swank-clojure-dim-trace-face)
+                                ("[0-9]+: \\(swank.*\\)"
+                                 1 swank-clojure-dim-trace-face)
+                                ("\\[\\([A-Z]+\\)\\]"
+                                 1 font-lock-function-name-face)))))
+
+(add-hook 'sldb-mode-hook 'swank-clojure-dim-font-lock)
+
 ;; Importer
 
 (defun swank-clojure-pick-import (classes)
@@ -158,6 +184,7 @@ will be used over paths too.)"
 
 (defun swank-clojure-insert-import (classes)
   "Insert an :import directive in the ns macro to import full-class."
+  (if (null classes) (error "No classes matched."))
   (if (= 1 (length classes))
       (save-excursion
         (goto-char (point-min))
