@@ -279,9 +279,9 @@ that symbols accessible in the current namespace go first."
     (slime-find-resource file)))
 
 (defn- namespace-to-path [ns]
-  (let [#^String ns-str (name (ns-name ns))]
-    (-> ns-str
-        (.substring 0 (.lastIndexOf ns-str "."))
+  (let [#^String ns-str (name (ns-name ns))
+        last-dot-index (.lastIndexOf ns-str ".")]
+    (-> (if (< 0 last-dot-index) (.substring ns-str 0 last-dot-index) ns-str)
         (.replace \- \_)
         (.replace \. \/))))
 
