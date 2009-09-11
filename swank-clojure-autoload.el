@@ -1,6 +1,7 @@
 
 (autoload 'swank-clojure-init "swank-clojure" "Initialize clojure for swank")
 (autoload 'swank-clojure-cmd "swank-clojure" "Command to start clojure")
+(autoload 'swank-clojure-project "swank-clojure" "Start a Clojure project session" t)
 
 (eval-after-load "slime"
   '(progn

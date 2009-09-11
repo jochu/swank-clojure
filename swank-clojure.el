@@ -8,6 +8,8 @@
 ;;; See swank-clojure.clj for instructions
 ;;;
 
+(require 'slime)
+
 (eval-and-compile
   (defvar swank-clojure-path
     (let ((path (file-truename (or (locate-library "swank-clojure")
@@ -202,5 +204,50 @@ will be used over paths too.)"
   (interactive (list (read-from-minibuffer "Class: " (slime-symbol-at-point))))
   (slime-eval-async `(swank:classes-for ,class)
                     #'swank-clojure-insert-import))
+
+(defvar swank-clojure-project-hook nil
+  "A hook to run when a new SLIME session starts via `swank-clojure-project'")
+
+;;;###autoload
+(defun swank-clojure-project (path)
+  "Setup classpaths for a clojure project and starts a new SLIME session.
+  Kills existing SLIME session, if any."
+  (interactive (list
+                (ido-read-directory-name
+                 "Project root: "
+                 (if (functionp 'locate-dominating-file) ; Emacs 23 only
+                     (locate-dominating-file default-directory "src")
+                   default-directory))))
+  ;; TODO: allow multiple SLIME sessions per Emacs instance
+  (when (get-buffer "*inferior-lisp*") (kill-buffer "*inferior-lisp*"))
+
+  (setq swank-clojure-binary nil
+        swank-clojure-extra-classpaths (let ((l (expand-file-name "lib" path)))
+                                         (if (file-exists-p l)
+                                             (directory-files l t ".jar$"))))
+
+  ;; Support different project styles
+  (if (or (file-exists-p (expand-file-name "pom.xml" path))
+          (file-exists-p (expand-file-name "project.clj" path)))
+      ;; Maven style
+      (progn
+        (setq swank-clojure-jar-path (expand-file-name "target/dependency/" path))
+        (dolist (d '("src/main/clojure/" "src/main/"
+                     "src/test/" "target/classes/" "target/dependency/"))
+          (add-to-list 'swank-clojure-extra-classpaths
+                       (expand-file-name d path))))
+    ;; Basic style
+    (setq swank-clojure-jar-path (format "%s/clojure/clojure.jar" clojure-src-root))
+    (add-to-list 'swank-clojure-extra-classpaths
+                 (expand-file-name "src/" path)))
+
+  (setq slime-lisp-implementations
+        (cons `(clojure ,(swank-clojure-cmd) :init swank-clojure-init)
+              (remove-if #'(lambda (x) (eq (car x) 'clojure))
+                         slime-lisp-implementations)))
+
+  (run-hooks 'swank-clojure-project-hook)
+  (save-window-excursion
+    (slime)))
 
 (provide 'swank-clojure)
