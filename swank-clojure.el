@@ -1,14 +1,14 @@
 ;;;; swank-clojure.el --- slime settings for clojure
 ;;;
-;;; Copyright (C) 2008 Jeffrey Chu
+;;; Copyright (C) 2008, 2009 Jeffrey Chu and Phil Hagelberg
 ;;;
 ;;; This file is licensed under the terms of the GNU General Public
 ;;; License as distributed with Emacs (press C-h C-c to view it).
 ;;;
-;;; See swank-clojure.clj for instructions
-;;;
+
 
 (require 'slime)
+(require 'clojure-mode)
 
 (eval-and-compile
   (defvar swank-clojure-path
@@ -28,18 +28,16 @@ to load the supporting clojure library swank."))
   :type 'string
   :group 'swank-clojure)
 
-(defcustom swank-clojure-jar-path nil
-  "The location of the jar file for clojure. For example,
-/path/to/clojure.jar "
-  :type 'string
-  :group 'swank-clojure)
-
-(defcustom swank-clojure-extra-classpaths (when (file-directory-p "~/.clojure") (directory-files "~/.clojure" t ".jar$"))
+(defcustom swank-clojure-classpath (when (file-directory-p "~/.clojure")
+                                     (directory-files "~/.clojure" t ".jar$"))
   "The classpath from which clojure will load from (passed into
 java as the -cp argument). On default, it includes all jar files
 within ~/.clojure/"
   :type 'list
   :group 'swank-clojure)
+
+;; For backwards-compatibility:
+(defvaralias 'swank-clojure-extra-classpaths 'swank-clojure-classpath)
 
 (defcustom swank-clojure-library-paths nil
   "The library paths used when loading shared libraries,
@@ -54,8 +52,7 @@ For example -Xmx512m or -Dsun.java2d.noddraw=true"
   :group 'swank-clojure)
 
 (defcustom swank-clojure-binary nil
-  "Used as a binary executable (instead of
-swank-clojure-java-path) if non-nil."
+  "Used as a binary executable (instead of swank-clojure-java-path) if non-nil."
   :type 'string
   :group 'swank-clojure)
 
@@ -111,8 +108,8 @@ will be used over paths too.)"
 
 (defun swank-clojure-cmd ()
   "Create the command to start clojure according to current settings."
-  (if (and (not swank-clojure-binary) (not swank-clojure-jar-path))
-      (error "You must specifiy either a `swank-clojure-binary' or a `swank-clojure-jar-path'")
+  (if (and (not swank-clojure-binary) (not swank-clojure-classpath))
+      (error "You must specifiy either a `swank-clojure-binary' or a `swank-clojure-classpath'")
     (if swank-clojure-binary
         (if (listp swank-clojure-binary)
             swank-clojure-binary
@@ -128,9 +125,8 @@ will be used over paths too.)"
                    (swank-clojure-concat-paths swank-clojure-library-paths)))
          "-classpath"
          (swank-clojure-concat-paths
-          (append (list swank-clojure-jar-path
-                        swank-clojure-path)
-                  swank-clojure-extra-classpaths))
+          (append (list swank-clojure-path)
+                  swank-clojure-classpath))
          "clojure.main")
         (let ((init-opts '()))
           (dolist (init-file swank-clojure-init-files init-opts) 
@@ -206,11 +202,12 @@ will be used over paths too.)"
                     #'swank-clojure-insert-import))
 
 (defvar swank-clojure-project-hook nil
-  "A hook to run when a new SLIME session starts via `swank-clojure-project'")
+  "A hook to run when a new SLIME session starts via `swank-clojure-project'.
+The `path' variable is bound to the project root when these functions run.")
 
 ;;;###autoload
 (defun swank-clojure-project (path)
-  "Setup classpaths for a clojure project and starts a new SLIME session.
+  "Setup classpath for a clojure project and starts a new SLIME session.
   Kills existing SLIME session, if any."
   (interactive (list
                 (ido-read-directory-name
@@ -222,31 +219,27 @@ will be used over paths too.)"
   (when (get-buffer "*inferior-lisp*") (kill-buffer "*inferior-lisp*"))
 
   (setq swank-clojure-binary nil
-        swank-clojure-extra-classpaths (let ((l (expand-file-name "lib" path)))
-                                         (if (file-exists-p l)
-                                             (directory-files l t ".jar$"))))
+        swank-clojure-classpath (let ((l (expand-file-name "lib" path)))
+                                  (if (file-exists-p l)
+                                      (directory-files l t ".jar$"))))
+  (add-to-list 'swank-clojure-classpath (expand-file-name "src/" path))
 
-  ;; Support different project styles
-  (if (or (file-exists-p (expand-file-name "pom.xml" path))
-          (file-exists-p (expand-file-name "project.clj" path)))
-      ;; Maven style
-      (progn
-        (setq swank-clojure-jar-path (expand-file-name "target/dependency/" path))
-        (dolist (d '("src/main/clojure/" "src/main/"
-                     "src/test/" "target/classes/" "target/dependency/"))
-          (add-to-list 'swank-clojure-extra-classpaths
-                       (expand-file-name d path))))
-    ;; Basic style
-    (setq swank-clojure-jar-path (format "%s/clojure/clojure.jar" clojure-src-root))
-    (add-to-list 'swank-clojure-extra-classpaths
-                 (expand-file-name "src/" path)))
+  ;; For Maven style project layouts
+  (when (or (file-exists-p (expand-file-name "pom.xml" path))
+            (file-exists-p (expand-file-name "project.clj" path)))
+    (dolist (d '("src/main/clojure/" "src/test/"
+                 "target/classes/" "target/dependency/"))
+      (add-to-list 'swank-clojure-classpath (expand-file-name d path)))
+    (add-to-list 'swank-clojure-extra-vm-args
+                 (format "-Dclojure.compile.path=%s"
+                         (expand-file-name "target/classes/" path))))
 
+  (run-hooks 'swank-clojure-project-hook)
   (setq slime-lisp-implementations
         (cons `(clojure ,(swank-clojure-cmd) :init swank-clojure-init)
               (remove-if #'(lambda (x) (eq (car x) 'clojure))
                          slime-lisp-implementations)))
 
-  (run-hooks 'swank-clojure-project-hook)
   (save-window-excursion
     (slime)))
 
