@@ -2,7 +2,7 @@
   (:use (swank util)
         (swank.util.concurrent thread)))
 
-(defn read-chars [n #^java.io.Reader rdr]
+(defn read-chars [#^java.io.Reader rdr n]
   (let [sb (StringBuilder.)]
     (dotimes [i n]
       (let [c (.read rdr)]

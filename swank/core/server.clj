@@ -15,25 +15,37 @@
 
 (defonce *connections* (ref []))
 
+(def slime-secret-path (str (user-home-path) File/separator ".slime-secret"))
+
 (defn- slime-secret
-  "Load the data from the secret file. Returns nil if secret file
-   could not be read."
+  "Returns the first line from the slime-secret file, path found in
+   slime-secret-path (default: .slime-secret in the user's home
+   directory).
+
+   See also: `accept-authenticated-connection'"
   ([] (try
-       (let [path-to-secret (str (user-home-path) File/separator ".slime-secret")]
-         (with-open [secret (BufferedReader. (FileReader. path-to-secret))]
-           (.readLine secret)))
+       (let [slime-secret-file (File. (str (user-home-path) File/separator ".slime-secret"))]
+         (when (and (.isFile slime-secret-file) (.canRead slime-secret-file))
+           (with-open [secret (BufferedReader. (FileReader. slime-secret-file))]
+             (.readLine secret))))
        (catch Throwable e nil))))
 
-(defn- accept-authenticated-connection
-  "If a slime-secret file exists, verify that the incomming connection
-   has sent it and the authentication string matches."
+(defn- accept-authenticated-connection ;; rename to authenticate-socket, takes in a connection
+  "Accepts and returns new connection if it is from an authenticated
+   machine. Otherwise, return nil.
+
+   Authentication depends on the contents of a slime-secret file on
+   both the server (swank) and the client (emacs slime). If no
+   slime-secret file is provided on the server side, all connections
+   are accepted.
+
+   See also: `slime-secret'"
   ([#^Socket socket opts]
-     (returning conn (make-connection socket (get opts :encoding *default-encoding*))
-       (when-let [secret (slime-secret)]
-         (let [first-val (read-from-connection conn)]
-           (when-not (= first-val secret)
-             (.close socket)
-             (throw (new Exception "Incoming connection doesn't know the password."))))))))
+     (returning [conn (make-connection socket (get opts :encoding *default-encoding*))]
+       (if-let [secret (slime-secret)]
+         (when-not (= (read-from-connection conn) secret)
+           (.close socket))
+         conn))))
 
 (defn- make-output-redirection
   ([conn]
@@ -54,17 +66,39 @@
         (connection-serve *current-connection*)
         (not dont-close)))))
 
-
 ;; Setup frontent
+(comment
+  (defn start-swank-socket-server!
+    "Starts and returns the socket server as a swank host. Takes an
+  optional set of options as a map:
+
+    :announce - an fn that will be called and provided with the
+      listening port of the newly established server. Default: none.
+
+    :dont-close - will accept multiple connections if true. Default: false."
+    ([server connection-serve] (start-swank-socket-server! connection-serve {}))
+    ([server connection-serve options]
+       (start-server-socket! server
+                             #(socket-serve connection-serve % options)
+                             (options :dont-close))
+       (when-let [announce (options :announce)]
+         (announce (.getLocalPort server)))
+       server)))
+
 (defn setup-server
-  "Starts a server. The port it started on will be called as an
-  argument to (announce-fn port). A connection will then be created
-  and (connection-serve conn) will then be called."
+  "The port it started on will be called as an argument to (announce-fn
+   port). A connection will then be created and (connection-serve conn)
+   will then be called."
   ([port announce-fn connection-serve opts]
-     (let [ss (socket-server port #(socket-serve connection-serve % opts))
-           local-port (.getLocalPort ss)]
-       (announce-fn local-port)
-       local-port)))
+     (let [server (make-server-socket {:port    port
+                                       :host    (opts :host)
+                                       :backlog (opts :backlog 0)})
+           port   (.getLocalPort server)]
+       (start-server-socket! server
+                             #(socket-serve connection-serve % opts)
+                             (opts :dont-close))
+       (announce-fn port)
+       port)))
 
 ;; Announcement functions
 (defn simple-announce [port]

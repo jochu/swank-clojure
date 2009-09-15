@@ -48,7 +48,7 @@
                 (assoc %1 key val))
              init coll)))
 
-(defmacro returning [var ret & body]
+(defmacro returning [[var ret] & body]
   `(let [~var ~ret]
      ~@body
      ~var))
