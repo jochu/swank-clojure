@@ -1,6 +1,5 @@
 ;; Requires clojure 1.1 (currently in alpha)
-(remove-ns 'swank.test-swank.core.sockets)
-(ns swank.test-swank.core.sockets
+(ns swank.test-swank.util.net.sockets
   (:import (java.net ServerSocket Socket InetSocketAddress))
   (:use clojure.test
         swank.util.net.sockets))

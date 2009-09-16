@@ -127,7 +127,7 @@ will be used over paths too.)"
          "-classpath"
          (swank-clojure-concat-paths
           (append (list swank-clojure-jar-path
-                        swank-clojure-path)
+                        (concat swank-clojure-path "src/"))
                   swank-clojure-extra-classpaths))
          "clojure.main")
         (let ((init-opts '()))
