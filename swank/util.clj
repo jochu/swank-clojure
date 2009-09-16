@@ -28,10 +28,10 @@
            (recur (rest coll) (inc i))))))
   {:tag Integer})
 
-(defn categorize-by
+(defn group-by
   "Categorizes elements within a coll into a map based on a keyfn."
   ([keyfn coll]
-     (categorize-by keyfn {} coll))
+     (group-by keyfn {} coll))
   ([keyfn init coll]
      (reduce #(let [key (keyfn %2)
                     val (conj (get %1 key []) %2)]

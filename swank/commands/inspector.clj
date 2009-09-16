@@ -159,8 +159,8 @@
     "Value: " (:value ~(deref obj)) (:newline)))
 
 (defn ns-refers-by-ns [#^clojure.lang.Namespace ns]
-  (categorize-by (fn [#^clojure.lang.Var v] (. v ns))
-                 (map val (ns-refers ns))))
+  (group-by (fn [#^clojure.lang.Var v] (. v ns))
+            (map val (ns-refers ns))))
 
 (defmethod emacs-inspect :namespace [#^clojure.lang.Namespace obj]
   (concat
