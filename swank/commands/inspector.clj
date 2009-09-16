@@ -225,17 +225,17 @@
     (inspect-object (eval (read-string string)))))
 
 (defn inspect-in-emacs [what]
-  (flet [(fn send-it []
-           (with-emacs-package
-             (reset-inspector)
-             (send-to-emacs `(:inspect ~(inspect-object what)))))]
+  (letfn [(send-it []
+            (with-emacs-package
+              (reset-inspector)
+              (send-to-emacs `(:inspect ~(inspect-object what)))))]
     (cond
-     *current-connection* (send-it)
-     (comment (first @*connections*))
-     ;; TODO: take a second look at this, will probably need garbage collection on *connections*
-     (comment
-       (binding [*current-connection* (first @*connections*)]
-         (send-it))))))
+      *current-connection* (send-it)
+      (comment (first @*connections*))
+      ;; TODO: take a second look at this, will probably need garbage collection on *connections*
+      (comment
+        (binding [*current-connection* (first @*connections*)]
+          (send-it))))))
 
 (defslimefn inspector-nth-part [index]
   (get @*inspectee-parts* index))
