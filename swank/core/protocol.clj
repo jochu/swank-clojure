@@ -48,7 +48,7 @@
   ([#^java.io.Reader reader]
      (let [len  (Integer/parseInt (read-chars reader 6) 16)
            msg  (read-chars reader len)
-           form (read-from-string (fix-namespace msg))]
+           form (read-string (fix-namespace msg))]
        (if (seq? form)
          (deep-replace {'t true} form)
          form))))

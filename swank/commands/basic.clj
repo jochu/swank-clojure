@@ -64,7 +64,7 @@
 ;;;; Macro expansion
 
 (defn- apply-macro-expander [expander string]
-  (pretty-pr-code (expander (read-from-string string))))
+  (pretty-pr-code (expander (read-string string))))
 
 (defslimefn swank-macroexpand-1 [string]
   (apply-macro-expander macroexpand-1 string))
@@ -226,7 +226,7 @@ that symbols accessible in the current namespace go first."
 ;;;; Operator messages
 (defslimefn operator-arglist [name package]
   (try
-   (let [f (read-from-string name)]
+   (let [f (read-string name)]
      (cond
       (keyword? f) "([map])"
       (symbol? f) (let [var (ns-resolve (maybe-ns package) f)]
@@ -299,7 +299,7 @@ that symbols accessible in the current namespace go first."
     `(:location ~path (:line ~line) nil)))
 
 (defslimefn find-definitions-for-emacs [name]
-  (let [sym-name (read-from-string name)
+  (let [sym-name (read-string name)
         sym-var (ns-resolve (maybe-ns *current-package*) sym-name)]
     (when-let [meta (and sym-var (meta sym-var))]
       (if-let [path (slime-find-file (:file meta))]

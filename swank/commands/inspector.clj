@@ -222,7 +222,7 @@
 (defslimefn init-inspector [string]
   (with-emacs-package
     (reset-inspector)
-    (inspect-object (eval (read-from-string string)))))
+    (inspect-object (eval (read-string string)))))
 
 (defn inspect-in-emacs [what]
   (flet [(fn send-it []
