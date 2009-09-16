@@ -2,16 +2,6 @@
   (:import (java.io StringReader)
            (clojure.lang LineNumberingPushbackReader)))
 
-(defmacro flet
-  "Allows for local function definitions in the following
-   format: (flet [(fn name [args] .. body)] .. )."
-  ([fns & body]
-     (let [fn-name
-           (fn fn-name [fn-seq]
-             (second fn-seq))
-           defs (apply vector (mapcat list (map fn-name fns) fns))]
-       `(let ~defs ~@body))))
-
 (defmacro one-of?
   "Short circuiting value comparison."
   ([val & possible]

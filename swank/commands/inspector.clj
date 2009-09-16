@@ -177,23 +177,23 @@
     ("Interns" (ns-interns obj)))))
 
 (defn inspector-content [specs]
-  (flet [(fn spec-seq [seq]
-           (let [[f & args] seq]
-             (cond
-              (= f :newline) (str \newline)
+  (letfn [(spec-seq [seq]
+            (let [[f & args] seq]
+              (cond
+                (= f :newline) (str \newline)
 
-              (= f :value)
-              (let [[obj & [str]] args]
-                (value-part obj str))
+                (= f :value)
+                (let [[obj & [str]] args]
+                  (value-part obj str))
 
-              (= f :action)
-              (let [[label lambda & options] args
-                    {:keys [refresh?]} (apply hash-map options)]
-                (action-part label lambda refresh?)))))
-         (fn spec-value [val]
-           (cond
-            (string? val) val
-            (seq? val) (spec-seq val)))]
+                (= f :action)
+                (let [[label lambda & options] args
+                      {:keys [refresh?]} (apply hash-map options)]
+                  (action-part label lambda refresh?)))))
+          (spec-value [val]
+            (cond
+              (string? val) val
+              (seq? val) (spec-seq val)))]
     (map spec-value specs)))
 
 ;; Works for infinite sequences, but it lies about length. Luckily, emacs doesn't
