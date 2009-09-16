@@ -7,6 +7,7 @@
     
     <property name="src"   location="src"/>
     <property name="build" location="classes"/>
+    <property name="dist"  location="dist"/>
 
     <available property="hasclojure" file="${clojure.jar}"/>
     
@@ -16,11 +17,13 @@
     <target name="init">
         <tstamp/>
         <mkdir dir="${build}"/>
+        <mkdir dir="${dist}"/>
     </target>
     
     <target name="clean" description="Remove generated files and directories.">
         <delete file="${jarfile}"/>
         <delete dir="${build}"/>
+        <delete dir="${dist}"/>
     </target>
 
     <!-- no compile yet
@@ -65,5 +68,15 @@
             </manifest>
         </jar>
     </target>
-    
+
+    <target name="dist" description="Create a distributable zip" depends="jar">
+        <zip destfile="${dist}/swank-clojure-LATEST.zip">
+            <zipfileset file="${jarfile}" prefix="swank-clojure/"/>
+            <zipfileset dir="." includes="*.el" prefix="swank-clojure/"/>
+        </zip>
+        <tar destfile="${dist}/swank-clojure-LATEST.tar.gz" compression="gzip">
+            <tarfileset file="${jarfile}" prefix="swank-clojure/"/>
+            <tarfileset dir="." includes="*.el" prefix="swank-clojure/"/>
+        </tar>
+    </target>
 </project>
