@@ -75,7 +75,8 @@
      (seq? obj) :seq
      (instance? Class obj) :class
      (instance? clojure.lang.Namespace obj) :namespace
-     (instance? clojure.lang.ARef obj) :aref)))
+     (instance? clojure.lang.ARef obj) :aref
+     (.isArray (class obj)) :array)))
 
 (defn inspect-meta-information [obj]
   (when (> (count (meta obj)) 0)
@@ -109,6 +110,18 @@
            (iterate inc 0)
            obj)))
 
+(defmethod emacs-inspect :array [obj]
+  (concat
+   (label-value-line*
+    ("Class" (class obj))
+    ("Count" (alength obj))
+    ("Component Type" (.getComponentType (class obj))))
+   '("Contents: " (:newline))
+   (mapcat (fn [i val]
+	     `(~(str "  " i ". ") (:value ~val) (:newline)))
+	   (iterate inc 0)
+	   obj)))
+
 (defmethod emacs-inspect :var [#^clojure.lang.Var obj]
   (concat
    (label-value-line*
@@ -136,9 +149,23 @@
            obj)))
 
 (defmethod emacs-inspect :default [obj]
-  `("Type: " (:value ~(class obj)) (:newline)
-    "Value: " (:value ~(str obj)) (:newline)
-    "Don't know how to inspect the object" (:newline)))
+  (let [fields (. (class obj) getDeclaredFields)
+	names (map (memfn getName) fields)
+	get (fn [f]
+	      (try (.setAccessible f true)
+		   (catch java.lang.SecurityException e))
+	      (try (.get f obj)
+		   (catch java.lang.IllegalAccessException e
+		     "Access denied.")))
+	vals (map get fields)]
+    (concat
+     `("Type: " (:value ~(class obj)) (:newline)
+       "Value: " (:value ~obj) (:newline)
+       "---" (:newline)
+       "Fields: " (:newline))
+     (mapcat
+      (fn [name val]
+	`(~(str "  " name ": ") (:value ~val) (:newline))) names vals))))
 
 (defmethod emacs-inspect :class [#^Class obj]
   (let [meths (. obj getMethods)
