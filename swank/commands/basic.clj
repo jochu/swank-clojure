@@ -31,18 +31,18 @@
      (eval-region string "NO_SOURCE_FILE" 1))
   ([string file line]
      (with-open [rdr (proxy [LineNumberingPushbackReader] ((StringReader. string))
-		       (getLineNumber [] line))]
+                       (getLineNumber [] line))]
        (binding [*file* file]
-	 (loop [form (read rdr false rdr), value nil, last-form nil]
-	   (if (= form rdr)
-	     [value last-form]
-	     (recur (read rdr false rdr)
-		    (eval form)
-		    form)))))))
+         (loop [form (read rdr false rdr), value nil, last-form nil]
+           (if (= form rdr)
+             [value last-form]
+             (recur (read rdr false rdr)
+                    (eval form)
+                    form)))))))
 
 (defslimefn interactive-eval-region [string]
   (with-emacs-package
-   (pr-str (first (eval-region string)))))
+    (pr-str (first (eval-region string)))))
 
 (defslimefn interactive-eval [string]
   (with-emacs-package
@@ -134,17 +134,14 @@
 
 (defn- line-at-position [file position]
   (try
-   (binding [*in* (java.io.BufferedReader. (java.io.FileReader. file))]
-     (let [count-next-line (fn [] (inc (count (read-line))))]
-       (loop [line 1 chars (count-next-line)]
-	 (if (>= chars position)
-	   line
-	   (recur (inc line) (+ chars (count-next-line)))))))
+   (with-open [f (java.io.LineNumberReader. (java.io.FileReader. file))]
+     (.skip f position)
+     (.getLineNumber f))
    (catch Exception e 1)))
 
 (defslimefn compile-string-for-emacs [string buffer position directory debug]
   (let [start (System/nanoTime)
-	line (line-at-position directory position)
+        line (line-at-position directory position)
         ret (with-emacs-package (eval-region string directory line))
         delta (- (System/nanoTime) start)]
     `(:compilation-result nil ~(pr-str ret) ~(/ delta 1000000000.0))))
