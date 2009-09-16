@@ -229,7 +229,7 @@ The `path' variable is bound to the project root when these functions run.")
             (file-exists-p (expand-file-name "project.clj" path)))
     (dolist (d '("src/main/clojure/" "src/test/"
                  "target/classes/" "target/dependency/"))
-      (add-to-list 'swank-clojure-classpath (expand-file-name d path)))
+      (add-to-list 'swank-clojure-classpath (expand-file-name d path) t))
     (add-to-list 'swank-clojure-extra-vm-args
                  (format "-Dclojure.compile.path=%s"
                          (expand-file-name "target/classes/" path))))
