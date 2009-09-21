@@ -219,6 +219,7 @@ The `path' variable is bound to the project root when these functions run.")
   (when (get-buffer "*inferior-lisp*") (kill-buffer "*inferior-lisp*"))
 
   (setq swank-clojure-binary nil
+        slime-net-coding-system 'utf-8-unix
         swank-clojure-classpath (let ((l (expand-file-name "lib" path)))
                                   (if (file-exists-p l)
                                       (directory-files l t ".jar$"))))
