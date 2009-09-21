@@ -223,6 +223,7 @@ The `path' variable is bound to the project root when these functions run.")
                                   (if (file-exists-p l)
                                       (directory-files l t ".jar$"))))
   (add-to-list 'swank-clojure-classpath (expand-file-name "src/" path))
+  (add-to-list 'swank-clojure-classpath (expand-file-name "test/" path) t)
 
   ;; For Maven style project layouts
   (when (or (file-exists-p (expand-file-name "pom.xml" path))
