@@ -30,6 +30,8 @@
          (.flush))))
   {:tag String})
 
+(def read-fail-exception (Exception. "Error reading swank message"))
+
 (defn read-swank-message
   "Given a `reader' (java.io.Reader), read the message as a clojure
    form (typically a sexp). This method will block until a message is
@@ -46,8 +48,8 @@
 
    See also `write-swank-message'."
   ([#^java.io.Reader reader]
-     (let [len  (Integer/parseInt (read-chars reader 6) 16)
-           msg  (read-chars reader len)
+     (let [len  (Integer/parseInt (read-chars reader 6 read-fail-exception) 16)
+           msg  (read-chars reader len read-fail-exception)
            form (read-string (fix-namespace msg))]
        (if (seq? form)
          (deep-replace {'t true} form)

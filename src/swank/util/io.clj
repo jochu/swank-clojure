@@ -2,13 +2,17 @@
   (:use (swank util)
         (swank.util.concurrent thread)))
 
-(defn read-chars [#^java.io.Reader rdr n]
-  (let [sb (StringBuilder.)]
-    (dotimes [i n]
-      (let [c (.read rdr)]
-        (when (not= c -1)
-          (.append sb (char c)))))
-    (str sb)))
+(defn read-chars
+  ([rdr n] (read-chars rdr n false))
+  ([#^java.io.Reader rdr n throw-exception]
+     (let [sb (StringBuilder.)]
+       (dotimes [i n]
+         (let [c (.read rdr)]
+           (if (not= c -1)
+             (.append sb (char c))
+             (when throw-exception
+               (throw throw-exception)))))
+       (str sb))))
 
 (defn call-on-flush-stream
   "Creates a stream that will call a given function when flushed."
