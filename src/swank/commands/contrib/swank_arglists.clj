@@ -18,7 +18,7 @@
   (with-emacs-package
    (or 
     (try
-     (when-let [sym (read-from-string variable-name)]
+     (when-let [sym (read-string variable-name)]
        (when-let [var (resolve sym)]
          (when (.isBound #^clojure.lang.Var var)
            (str variable-name " => " (var-get var)))))

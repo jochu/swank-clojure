@@ -85,7 +85,7 @@ For example -Xmx512m or -Dsun.java2d.noddraw=true"
    (when (boundp 'slime-protocol-version)
      (format "(swank.swank/ignore-protocol-version %S)\n\n" slime-protocol-version))
    (format "(swank.swank/start-server %S :encoding %S)\n\n"
-           file (format "%s" encoding))))
+           file (format "%s" (slime-coding-system-cl-name encoding)))))
 
 (defun swank-clojure-find-package ()
   (let ((regexp "^(\\(clojure.core/\\)?\\(in-\\)?ns\\s-+[:']?\\([^()\" \t\n]+\\>\\)"))
@@ -125,8 +125,8 @@ will be used over paths too.)"
                    (swank-clojure-concat-paths swank-clojure-library-paths)))
          "-classpath"
          (swank-clojure-concat-paths
-          (append (list swank-clojure-path)
-                  swank-clojure-classpath))
+          (cons (concat swank-clojure-path "src/")
+                swank-clojure-classpath))
          "clojure.main")
         (let ((init-opts '()))
           (dolist (init-file swank-clojure-init-files init-opts) 

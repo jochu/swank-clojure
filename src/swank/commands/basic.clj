@@ -28,17 +28,21 @@
   "Evaluate string, return the results of the last form as a list and
    a secondary value the last form."
   ([string]
-     (with-open [rdr (LineNumberingPushbackReader. (StringReader. string))]
-       (loop [form (read rdr false rdr), value nil, last-form nil]
-         (if (= form rdr)
-           [value last-form]
-           (recur (read rdr false rdr)
-                  (eval form)
-                  form))))))
+     (eval-region string "NO_SOURCE_FILE" 1))
+  ([string file line]
+     (with-open [rdr (proxy [LineNumberingPushbackReader] ((StringReader. string))
+                       (getLineNumber [] line))]
+       (binding [*file* file]
+         (loop [form (read rdr false rdr), value nil, last-form nil]
+           (if (= form rdr)
+             [value last-form]
+             (recur (read rdr false rdr)
+                    (eval form)
+                    form)))))))
 
 (defslimefn interactive-eval-region [string]
   (with-emacs-package
-   (pr-str (first (eval-region string)))))
+    (pr-str (first (eval-region string)))))
 
 (defslimefn interactive-eval [string]
   (with-emacs-package
@@ -64,7 +68,7 @@
 ;;;; Macro expansion
 
 (defn- apply-macro-expander [expander string]
-  (pretty-pr-code (expander (read-from-string string))))
+  (pretty-pr-code (expander (read-string string))))
 
 (defslimefn swank-macroexpand-1 [string]
   (apply-macro-expander macroexpand-1 string))
@@ -128,9 +132,17 @@
 (defslimefn load-file [file-name]
   (pr-str (clojure.core/load-file file-name)))
 
+(defn- line-at-position [file position]
+  (try
+   (with-open [f (java.io.LineNumberReader. (java.io.FileReader. file))]
+     (.skip f position)
+     (.getLineNumber f))
+   (catch Exception e 1)))
+
 (defslimefn compile-string-for-emacs [string buffer position directory debug]
   (let [start (System/nanoTime)
-        ret (with-emacs-package (eval-region string))
+        line (line-at-position directory position)
+        ret (with-emacs-package (eval-region string directory line))
         delta (- (System/nanoTime) start)]
     `(:compilation-result nil ~(pr-str ret) ~(/ delta 1000000000.0))))
 
@@ -226,7 +238,7 @@ that symbols accessible in the current namespace go first."
 ;;;; Operator messages
 (defslimefn operator-arglist [name package]
   (try
-   (let [f (read-from-string name)]
+   (let [f (read-string name)]
      (cond
       (keyword? f) "([map])"
       (symbol? f) (let [var (ns-resolve (maybe-ns package) f)]
@@ -299,7 +311,7 @@ that symbols accessible in the current namespace go first."
     `(:location ~path (:line ~line) nil)))
 
 (defslimefn find-definitions-for-emacs [name]
-  (let [sym-name (read-from-string name)
+  (let [sym-name (read-string name)
         sym-var (ns-resolve (maybe-ns *current-package*) sym-name)]
     (when-let [meta (and sym-var (meta sym-var))]
       (if-let [path (slime-find-file (:file meta))]

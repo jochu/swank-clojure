@@ -60,21 +60,23 @@
       (catch Throwable t
         nil))))
 
+
+(defn- maybe-alias [sym ns]
+  (or (resolve-ns sym (maybe-ns ns))
+      (maybe-ns ns)))
+
 (defn potential-completions [symbol-ns ns]
   (if symbol-ns
     (map #(str symbol-ns "/" %)
          (if-let [class (resolve-class symbol-ns)]
            (potential-static class)
-           (potential-var-public symbol-ns)))
+           (potential-var-public (maybe-alias symbol-ns ns))))
     (concat (potential-var ns)
             (when-not symbol-ns
               (potential-ns))
             (potential-classes ns)
             (potential-dot ns))))
 
-(defn- maybe-alias [sym ns]
-  (or (resolve-ns sym (maybe-ns ns))
-      (maybe-ns ns)))
 
 (defslimefn simple-completions [symbol-string package]
   (try

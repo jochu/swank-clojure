@@ -25,11 +25,20 @@
   (let [control
         (dothread-swank
           (thread-set-name "Swank Control Thread")
-          (control-loop conn))
+          (try
+           (control-loop conn)
+           (catch Exception e
+             ;; fail silently
+             nil)))
         read
         (dothread-swank
           (thread-set-name "Read Loop Thread")
-          (read-loop conn control))]
+          (try
+           (read-loop conn control)
+           (catch Exception e
+             ;; This could be put somewhere better
+             (.interrupt control)
+             (dosync (alter *connections* (partial remove #{conn}))))))]
     (dosync
      (ref-set (conn :control-thread) control)
      (ref-set (conn :read-thread) read))))
