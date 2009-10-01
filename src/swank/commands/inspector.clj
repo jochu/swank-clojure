@@ -74,7 +74,9 @@
      (string? obj) :string
      (seq? obj) :seq
      (instance? Class obj) :class
-     (instance? clojure.lang.Namespace obj) :namespace)))
+     (instance? clojure.lang.Namespace obj) :namespace
+     (instance? clojure.lang.ARef obj) :aref
+     (.isArray (class obj)) :array)))
 
 (defn inspect-meta-information [obj]
   (when (> (count (meta obj)) 0)
@@ -108,6 +110,18 @@
            (iterate inc 0)
            obj)))
 
+(defmethod emacs-inspect :array [obj]
+  (concat
+   (label-value-line*
+    ("Class" (class obj))
+    ("Count" (alength obj))
+    ("Component Type" (.getComponentType (class obj))))
+   '("Contents: " (:newline))
+   (mapcat (fn [i val]
+	     `(~(str "  " i ". ") (:value ~val) (:newline)))
+	   (iterate inc 0)
+	   obj)))
+
 (defmethod emacs-inspect :var [#^clojure.lang.Var obj]
   (concat
    (label-value-line*
@@ -135,9 +149,23 @@
            obj)))
 
 (defmethod emacs-inspect :default [obj]
-  `("Type: " (:value ~(class obj)) (:newline)
-    "Value: " (:value ~(str obj)) (:newline)
-    "Don't know how to inspect the object" (:newline)))
+  (let [fields (. (class obj) getDeclaredFields)
+	names (map (memfn getName) fields)
+	get (fn [f]
+	      (try (.setAccessible f true)
+		   (catch java.lang.SecurityException e))
+	      (try (.get f obj)
+		   (catch java.lang.IllegalAccessException e
+		     "Access denied.")))
+	vals (map get fields)]
+    (concat
+     `("Type: " (:value ~(class obj)) (:newline)
+       "Value: " (:value ~obj) (:newline)
+       "---" (:newline)
+       "Fields: " (:newline))
+     (mapcat
+      (fn [name val]
+	`(~(str "  " name ": ") (:value ~val) (:newline))) names vals))))
 
 (defmethod emacs-inspect :class [#^Class obj]
   (let [meths (. obj getMethods)
@@ -153,10 +181,13 @@
      (mapcat (fn [m]
                `("  " (:value ~m) (:newline))) meths))))
 
+(defmethod emacs-inspect :aref [#^ARef obj]
+  `("Type: " (:value ~(class obj)) (:newline)
+    "Value: " (:value ~(deref obj)) (:newline)))
 
 (defn ns-refers-by-ns [#^clojure.lang.Namespace ns]
-  (categorize-by (fn [#^clojure.lang.Var v] (. v ns))
-                 (map val (ns-refers ns))))
+  (group-by (fn [#^clojure.lang.Var v] (. v ns))
+            (map val (ns-refers ns))))
 
 (defmethod emacs-inspect :namespace [#^clojure.lang.Namespace obj]
   (concat
@@ -173,23 +204,23 @@
     ("Interns" (ns-interns obj)))))
 
 (defn inspector-content [specs]
-  (flet [(fn spec-seq [seq]
-           (let [[f & args] seq]
-             (cond
-              (= f :newline) (str \newline)
+  (letfn [(spec-seq [seq]
+            (let [[f & args] seq]
+              (cond
+                (= f :newline) (str \newline)
 
-              (= f :value)
-              (let [[obj & [str]] args]
-                (value-part obj str))
+                (= f :value)
+                (let [[obj & [str]] args]
+                  (value-part obj str))
 
-              (= f :action)
-              (let [[label lambda & options] args
-                    {:keys [refresh?]} (apply hash-map options)]
-                (action-part label lambda refresh?)))))
-         (fn spec-value [val]
-           (cond
-            (string? val) val
-            (seq? val) (spec-seq val)))]
+                (= f :action)
+                (let [[label lambda & options] args
+                      {:keys [refresh?]} (apply hash-map options)]
+                  (action-part label lambda refresh?)))))
+          (spec-value [val]
+            (cond
+              (string? val) val
+              (seq? val) (spec-seq val)))]
     (map spec-value specs)))
 
 ;; Works for infinite sequences, but it lies about length. Luckily, emacs doesn't
@@ -218,20 +249,20 @@
 (defslimefn init-inspector [string]
   (with-emacs-package
     (reset-inspector)
-    (inspect-object (eval (read-from-string string)))))
+    (inspect-object (eval (read-string string)))))
 
 (defn inspect-in-emacs [what]
-  (flet [(fn send-it []
-           (with-emacs-package
-             (reset-inspector)
-             (send-to-emacs `(:inspect ~(inspect-object what)))))]
+  (letfn [(send-it []
+            (with-emacs-package
+              (reset-inspector)
+              (send-to-emacs `(:inspect ~(inspect-object what)))))]
     (cond
-     *current-connection* (send-it)
-     (comment (first @*connections*))
-     ;; TODO: take a second look at this, will probably need garbage collection on *connections*
-     (comment
-       (binding [*current-connection* (first @*connections*)]
-         (send-it))))))
+      *current-connection* (send-it)
+      (comment (first @*connections*))
+      ;; TODO: take a second look at this, will probably need garbage collection on *connections*
+      (comment
+        (binding [*current-connection* (first @*connections*)]
+          (send-it))))))
 
 (defslimefn inspector-nth-part [index]
   (get @*inspectee-parts* index))

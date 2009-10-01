@@ -4,48 +4,53 @@
 
 ;; Read forms
 (def #^{:private true}
-     *namespace-re* (re-pattern "(^\\(:emacs-rex \\([a-zA-Z][a-zA-Z0-9]+):"))
+     *namespace-re* #"(^\(:emacs-rex \([a-zA-Z][a-zA-Z0-9]+):")
+
 (defn- fix-namespace
   "Changes the namespace of a function call from pkg:fn to ns/fn. If
    no pkg exists, then nothing is done."
   ([text] (.replaceAll (re-matcher *namespace-re* text) "$1/")))
 
-(defn- hex->num
-  "Converts a hex string into an integer"
-  ([#^String hex-str] (Integer/parseInt hex-str 16))
-  {:tag Integer})
-
-(defn- num->hex
-  "Converts a number to a hex string. If a minimum length is provided,
-   the hex number will be left padded with 0s."
-  ([num]
-     (Integer/toHexString num))
-  ([num min-len]
-     (let [hex (num->hex num)
-           len (count hex)]
-       (if (< len min-len)
-         (str (apply str (replicate (- min-len len) \0)) hex)
-         hex)))
-  {:tag String})
-
 (defn write-swank-message
-  "Encodes a message into slime encoded message"
-  ([#^java.io.Writer w message]
-     (let [s (pr-str message)
+  "Given a `writer' (java.io.Writer) and a `message' (typically an
+   sexp), encode the message according to the slime protocol and
+   write the message into the writer.
+   
+   The protocol itself is simply a 6-character hex string,
+   representing the message length, followed by a lisp-readable
+   version of the message itself.
+
+   See also `read-swank-message'."
+  ([#^java.io.Writer writer message]
+     (let [s   (pr-str message)
            len (.length s)]
-       (doto w
-         (.write (num->hex len 6))
+       (doto writer
+         (.write (format "%06x" len))
          (.write s)
          (.flush))))
   {:tag String})
 
+(def read-fail-exception (Exception. "Error reading swank message"))
+
 (defn read-swank-message
-  "Decodes a message from emacs. Expects a reader."
-  ([#^java.io.Reader rdr]
-     (let [len (hex->num (read-chars 6 rdr))
-           msg (read-chars len rdr)
-           form (read-from-string (fix-namespace msg))]
+  "Given a `reader' (java.io.Reader), read the message as a clojure
+   form (typically a sexp). This method will block until a message is
+   completely transfered.
+
+   Note: This function will do some amount of Common Lisp -> clojure
+   conversions. This is due to the fact that several slime functions
+   like to treat everything it's talking to as a common lisp
+   implementation.
+     - If an :emacs-rex form is received and the first form contains a
+       common lisp package designation, this will convert it to use a
+       clojure designation.
+     - t will be converted to true
+
+   See also `write-swank-message'."
+  ([#^java.io.Reader reader]
+     (let [len  (Integer/parseInt (read-chars reader 6 read-fail-exception) 16)
+           msg  (read-chars reader len read-fail-exception)
+           form (read-string (fix-namespace msg))]
        (if (seq? form)
          (deep-replace {'t true} form)
          form))))
-

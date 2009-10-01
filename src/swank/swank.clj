@@ -9,14 +9,14 @@
 ;;;
 
 (ns swank.swank
-  (:gen-class)
   (:use (swank core)
         (swank.core connection server)
         (swank.util.concurrent thread))
   (:require (swank.util.concurrent [mbox :as mb])
             (swank commands)
-            (swank.commands basic indent contrib inspector)
-            (swank.clj-contrib trace)))
+            (swank.commands basic indent completion
+                            contrib inspector import)
+            (swank.commands.contrib trace)))
 
 (defn ignore-protocol-version [version]
   (dosync (ref-set *protocol-version* version)))
@@ -28,15 +28,18 @@
           (thread-set-name "Swank Control Thread")
           (try
            (control-loop conn)
-           (catch java.net.SocketException e
-             (dosync (alter *connections* disj conn)))))
+           (catch Exception e
+             ;; fail silently
+             nil)))
         read
         (dothread-swank
           (thread-set-name "Read Loop Thread")
-          (try 
+          (try
            (read-loop conn control)
-           (catch java.net.SocketException e)
-           (catch NumberFormatException e)))]
+           (catch Exception e
+             ;; This could be put somewhere better
+             (.interrupt control)
+             (dosync (alter *connections* (partial remove #{conn}))))))]
     (dosync
      (ref-set (conn :control-thread) control)
      (ref-set (conn :read-thread) read))))
@@ -52,8 +55,3 @@
                        (simple-announce port))
                      connection-serve
                      opts))))
-
-(defn stop-server
-  "stop the server"
-  []
-  (close-server))

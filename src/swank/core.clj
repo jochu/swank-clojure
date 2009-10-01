@@ -11,6 +11,9 @@
 ;; Emacs packages
 (def *current-package*)
 
+(def #^{:doc "Include swank-clojure thread in stack trace for debugger."}
+     *debug-swank-clojure* false)
+
 (defonce *active-threads* (ref ()))
 
 (defn maybe-ns [package]
@@ -139,7 +142,10 @@
        (throw t))
 
      ;; start sldb, don't bother here because you can't actually recover with java
-     (invoke-debugger t id)
+     (invoke-debugger (if *debug-swank-clojure*
+                        t
+                        (.getCause t))
+                      id)
      ;; reply with abort
      (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id)))))
 

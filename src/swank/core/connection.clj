@@ -27,28 +27,42 @@
       "us-ascii" "us-ascii" 
       "us-ascii-unix" "us-ascii"})
 
-(defn make-connection
+(defn make-connection ;; rename to make-swank-connection
+  "Given a `socket', creates a swank connection. Accepts an optional
+   argument `encoding' to define the encoding of the connection. If
+   encoding is nil, then the default encoding will be used.
+
+   See also: `*default-encoding*', `start-server-socket!'"
   ([#^Socket socket] (make-connection socket *default-encoding*))
   ([#^Socket socket encoding]
-     {:socket socket
-      :reader (InputStreamReader. (.getInputStream socket) #^String (get encoding-map encoding encoding))
-      :writer (OutputStreamWriter. (.getOutputStream socket) #^String (get encoding-map encoding encoding))
-      :writer-redir (ref nil)
-   
-      :indent-cache (ref {})
-      :indent-cache-pkg (ref nil)
-   
-      :control-thread (ref nil)
-      :read-thread (ref nil)
-      :repl-thread (ref nil)}))
+     (let [#^String
+           encoding (or (encoding-map encoding encoding) *default-encoding*)]
+       {:socket socket
+        :reader (InputStreamReader. (.getInputStream socket) encoding)
+        :writer (OutputStreamWriter. (.getOutputStream socket) encoding)
+        :writer-redir (ref nil)
+        
+        :indent-cache (ref {})
+        :indent-cache-pkg (ref nil)
+        
+        :control-thread (ref nil)
+        :read-thread (ref nil)
+        :repl-thread (ref nil)})))
 
 (defn read-from-connection
+  "Reads a single message from a swank-connection.
+
+   See also: `write-to-connection', `read-swank-message',
+     `make-swank-connection'"
   ([] (read-from-connection *current-connection*))
   ([conn]
-     (read-swank-message (conn :reader)))
-  {:tag String})
+     (read-swank-message (conn :reader))))
 
 (defn write-to-connection
+  "Writes a single message to a swank-connection.
+
+  See also: `read-from-connection', `write-swank-message',
+    `make-swank-connection'"
   ([msg] (write-to-connection *current-connection* msg))
   ([conn msg]
      (write-swank-message (conn :writer) msg)))

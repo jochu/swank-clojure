@@ -21,7 +21,7 @@
       next-id)))
 
 (defn thread-map-id [thread]
-  (returning id (dosync (get-thread-id thread))
+  (returning [id (dosync (get-thread-id thread))]
     (thread-map-clean)))
 
 (defn find-thread [id]

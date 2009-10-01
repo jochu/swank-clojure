@@ -2,16 +2,6 @@
   (:import (java.io StringReader)
            (clojure.lang LineNumberingPushbackReader)))
 
-(defmacro flet
-  "Allows for local function definitions in the following
-   format: (flet [(fn name [args] .. body)] .. )."
-  ([fns & body]
-     (let [fn-name
-           (fn fn-name [fn-seq]
-             (second fn-seq))
-           defs (apply vector (mapcat list (map fn-name fns) fns))]
-       `(let ~defs ~@body))))
-
 (defmacro one-of?
   "Short circuiting value comparison."
   ([val & possible]
@@ -38,17 +28,17 @@
            (recur (rest coll) (inc i))))))
   {:tag Integer})
 
-(defn categorize-by
+(defn group-by
   "Categorizes elements within a coll into a map based on a keyfn."
   ([keyfn coll]
-     (categorize-by keyfn {} coll))
+     (group-by keyfn {} coll))
   ([keyfn init coll]
      (reduce #(let [key (keyfn %2)
                     val (conj (get %1 key []) %2)]
                 (assoc %1 key val))
              init coll)))
 
-(defmacro returning [var ret & body]
+(defmacro returning [[var ret] & body]
   `(let [~var ~ret]
      ~@body
      ~var))
@@ -69,10 +59,3 @@
 
 (defmacro continuously [& body]
   `(loop [] ~@body (recur)))
-
-(defn read-from-string
-  "Reads the next object from a string, throws an exception when form
-   cannot be read."
-  ([#^String string]
-     (with-open [rdr (LineNumberingPushbackReader. (StringReader. string))]
-       (read rdr))))
