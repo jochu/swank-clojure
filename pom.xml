@@ -60,6 +60,11 @@
             <!-- These may throw NullPointerException on compile: -->
             <namespace>!swank.loader</namespace>
             <namespace>!swank.commands.contrib.swank-arglists</namespace>
+            <!-- These are until we workaround the terrible at load time checks: -->
+            <namespace>!swank.clj-contrib.pprint</namespace>
+            <namespace>!swank.clj-contrib.macroexpand</namespace>
+            <namespace>!swank.commands.basic</namespace>
+            <namespace>!swank.swank</namespace>
           </namespaces>
         </configuration>
         <executions>
