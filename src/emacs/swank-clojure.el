@@ -12,7 +12,11 @@
   (defvar swank-clojure-path
     (let ((path (file-truename (or (locate-library "swank-clojure")
                                    load-file-name))))
-      (and path (file-name-directory path)))
+      (and path (file-name-directory ; go back two directories
+                 (directory-file-name
+                  (file-name-directory
+                   (directory-file-name
+                    (file-name-directory path)))))))
     "Directory containing the swank-clojure package. This is used
 to load the supporting clojure library swank."))
 
@@ -127,7 +131,7 @@ will be used over paths too.)"
          "-classpath"
          (swank-clojure-concat-paths
           (append (list swank-clojure-jar-path
-                        (concat swank-clojure-path "src/"))
+                        (concat swank-clojure-path "src/main/clojure/"))
                   swank-clojure-extra-classpaths))
          "clojure.main")
         (let ((init-opts '()))
