@@ -1,4 +1,3 @@
-(remove-ns 'swank.commands.completion)
 (ns swank.commands.completion
   (:use (swank util core commands)
         (swank.util string clojure java)))

@@ -59,3 +59,8 @@
 
 (defmacro continuously [& body]
   `(loop [] ~@body (recur)))
+
+(defmacro failing-gracefully [& body]
+  `(try
+    ~@body
+    (catch Throwable _# nil)))

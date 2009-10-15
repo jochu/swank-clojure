@@ -1,0 +1,33 @@
+<assembly>
+    <id>distribution</id>
+    <formats>
+        <format>zip</format>
+        <format>tar.bz2</format>
+        <format>tar.gz</format>
+    </formats>
+    <files>
+        <file>
+            <source>src/emacs/swank-clojure-autoload.el</source>
+            <outputDirectory>/</outputDirectory>
+            <filtered>true</filtered>
+        </file>
+        <file>
+            <source>src/emacs/swank-clojure.el</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+        <file>
+            <source>README</source>
+            <outputDirectory>/</outputDirectory>
+            <filtered>true</filtered>
+        </file>
+    </files>
+    <fileSets>
+        <fileSet>
+            <directory>${project.build.directory}</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>*.jar</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+</assembly>
