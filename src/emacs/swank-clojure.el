@@ -1,11 +1,18 @@
-;;;; swank-clojure.el --- slime settings for clojure
-;;;
-;;; Copyright (C) 2008, 2009 Jeffrey Chu and Phil Hagelberg
-;;;
-;;; This file is licensed under the terms of the GNU General Public
-;;; License as distributed with Emacs (press C-h C-c to view it).
-;;;
-
+;;; swank-clojure.el --- slime adapter for clojure
+;;
+;; Copyright (C) 2008, 2009 Jeffrey Chu and Phil Hagelberg
+;;
+;; Authors: Jeffrey Chu <jochu0@gmail.com>
+;;          Phil Hagelberg <technomancy@gmail.com>
+;;
+;; URL: http://www.emacswiki.org/cgi-bin/wiki/ClojureMode
+;; Version: 1.0
+;; Keywords: languages, lisp
+;; Package-Requires: ((slime-repl "20091016") (clojure-mode "1.6"))
+;;
+;; This file is licensed under the terms of the GNU General Public
+;; License as distributed with Emacs (press C-h C-c to view it).
+;;
 
 (require 'slime)
 (require 'clojure-mode)
@@ -13,6 +20,7 @@
 (eval-and-compile
   (defvar swank-clojure-path
     (let ((path (file-truename (or (locate-library "swank-clojure")
+				   (buffer-file-name)
                                    load-file-name))))
       (and path (file-name-directory ; go back two directories
                  (directory-file-name
@@ -32,8 +40,15 @@ to load the supporting clojure library swank."))
   :type 'string
   :group 'swank-clojure)
 
-(defcustom swank-clojure-classpath (when (file-directory-p "~/.clojure")
-                                     (directory-files "~/.clojure" t ".jar$"))
+(defcustom swank-clojure-classpath 
+  (append 
+   (when (file-directory-p "~/.clojure")
+     (directory-files "~/.clojure" t ".jar$"))
+   ;; TODO: this sucks.
+   (list
+    "~/.m2/repository/com/codestuffs/clojure/swank-clojure/1.0-SNAPSHOT/swank-clojure-1.0-SNAPSHOT.jar"
+    "~/.m2/repository/org/clojure/clojure/1.0.0/clojure-1.0.0.jar"
+    "~/.m2/repository/org/clojure/clojure-contrib/1.0.0-SNAPSHOT/clojure-contrib-1.0.0-SNAPSHOT.jar"))
   "The classpath from which clojure will load from (passed into
 java as the -cp argument). On default, it includes all jar files
 within ~/.clojure/"
@@ -81,6 +96,7 @@ For example -Xmx512m or -Dsun.java2d.noddraw=true"
 
 (setq swank-clojure-dim-trace-face 'swank-clojure-dim-trace-face)
 
+;;;###autoload
 (defun swank-clojure-init (file encoding)
   (concat
    (when swank-clojure-compile-p
@@ -110,6 +126,7 @@ For example -Xmx512m or -Dsun.java2d.noddraw=true"
 will be used over paths too.)"
   (mapconcat 'identity (mapcar 'expand-file-name paths) path-separator))
 
+;;;###autoload
 (defun swank-clojure-cmd ()
   "Create the command to start clojure according to current settings."
   (if (and (not swank-clojure-binary) (not swank-clojure-classpath))
@@ -137,6 +154,13 @@ will be used over paths too.)"
             (setq init-opts (append init-opts (list "-i" init-file))))
           init-opts)
         (list "--repl"))))))
+
+;;;###autoload
+(defun swank-clojure-add-slime-implementation ()
+  (setq slime-lisp-implementations
+        (cons `(clojure ,(swank-clojure-cmd) :init swank-clojure-init)
+              (remove-if #'(lambda (x) (eq (car x) 'clojure))
+                         slime-lisp-implementations))))
 
 ;; Change the repl to be more clojure friendly
 (defun swank-clojure-slime-repl-modify-syntax ()
@@ -225,7 +249,7 @@ The `path' variable is bound to the project root when these functions run.")
   (setq swank-clojure-binary nil
         slime-net-coding-system 'utf-8-unix
         swank-clojure-classpath (let ((l (expand-file-name "lib" path)))
-                                  (if (file-exists-p l)
+                                  (if (file-directory-p l)
                                       (directory-files l t ".jar$"))))
   (add-to-list 'swank-clojure-classpath (expand-file-name "src/" path))
   (add-to-list 'swank-clojure-classpath (expand-file-name "test/" path) t)
@@ -241,12 +265,13 @@ The `path' variable is bound to the project root when these functions run.")
                          (expand-file-name "target/classes/" path))))
 
   (run-hooks 'swank-clojure-project-hook)
-  (setq slime-lisp-implementations
-        (cons `(clojure ,(swank-clojure-cmd) :init swank-clojure-init)
-              (remove-if #'(lambda (x) (eq (car x) 'clojure))
-                         slime-lisp-implementations)))
+  (swank-clojure-add-slime-implementation)
 
   (save-window-excursion
     (slime)))
 
+;;;###autoload
+(add-hook 'slime-load-hook 'swank-clojure-add-slime-implementation)
+
 (provide 'swank-clojure)
+;;; swank-clojure.el ends here
