@@ -10,18 +10,7 @@
 ;;   http://java.sun.com/javase/6/docs/technotes/tools/findingclasses.html
 ;;   http://java.sun.com/javase/6/docs/technotes/tools/solaris/classpath.html
 
-(ns #^{:author "Jeff Valk"
-	   :doc "Provides Java classpath and (compiled) Clojure namespace browsing.
-  Scans the classpath for all class files, and provides functions for
-  categorizing them. Classes are resolved on the start-up classpath only.
-  Calls to 'add-classpath', etc are not considered.
-
-  Class information is built as a list of maps of the following keys:
-    :name  Java class or Clojure namespace name
-    :loc   Classpath entry (directory or jar) on which the class is located
-    :file  Path of the class file, relative to :loc"}
-
-  swank.util.class-browse
+(ns swank.util.class-browse
   (:import [java.io File FilenameFilter]
 		   [java.util StringTokenizer]
 		   [java.util.jar JarFile JarEntry]))
