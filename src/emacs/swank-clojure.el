@@ -200,35 +200,6 @@ will be used over paths too.)"
 
 (add-hook 'sldb-mode-hook 'swank-clojure-dim-font-lock)
 
-;; Importer
-
-(defun swank-clojure-pick-import (classes)
-  (swank-clojure-insert-import
-   (list (if (and (boundp 'ido-mode) ido-mode)
-             (ido-completing-read "Insert import: " classes)
-           (completing-read "Insert import: " classes)))))
-
-(defun swank-clojure-insert-import (classes)
-  "Insert an :import directive in the ns macro to import full-class."
-  (if (null classes) (error "No classes matched."))
-  (if (= 1 (length classes))
-      (save-excursion
-        (goto-char (point-min))
-        (search-forward "(ns ")
-        (end-of-defun)
-        (backward-char 2)
-        (let* ((segments (split-string (first classes) "\\."))
-               (package (mapconcat 'identity (butlast segments 1) "."))
-               (class-name (car (last segments))))
-          (insert (format "\n(:import [%s %s])" package class-name)))
-        (indent-for-tab-command))
-    (swank-clojure-pick-import classes)))
-
-(defun swank-clojure-import (class)
-  (interactive (list (read-from-minibuffer "Class: " (slime-symbol-at-point))))
-  (slime-eval-async `(swank:classes-for ,class)
-                    #'swank-clojure-insert-import))
-
 (defvar swank-clojure-project-hook nil
   "A hook to run when a new SLIME session starts via `swank-clojure-project'.
 The `path' variable is bound to the project root when these functions run.")
