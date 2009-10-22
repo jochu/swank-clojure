@@ -217,29 +217,30 @@ The `path' variable is bound to the project root when these functions run.")
   ;; TODO: allow multiple SLIME sessions per Emacs instance
   (when (get-buffer "*inferior-lisp*") (kill-buffer "*inferior-lisp*"))
 
-  (setq swank-clojure-binary nil
-        slime-net-coding-system 'utf-8-unix
-        swank-clojure-classpath (let ((l (expand-file-name "lib" path)))
-                                  (if (file-directory-p l)
-                                      (directory-files l t ".jar$"))))
-  (add-to-list 'swank-clojure-classpath (expand-file-name "src/" path))
-  (add-to-list 'swank-clojure-classpath (expand-file-name "test/" path) t)
+  (let ((slime-lisp-implementations (copy-list slime-lisp-implementations))
+        (swank-clojure-extra-vm-args (copy-list swank-clojure-extra-vm-args))
+        (swank-clojure-binary nil)
+        (swank-clojure-classpath (let ((l (expand-file-name "lib" path)))
+                                   (if (file-directory-p l)
+                                       (directory-files l t ".jar$")))))
 
-  ;; For Maven style project layouts
-  (when (or (file-exists-p (expand-file-name "pom.xml" path))
-            (file-exists-p (expand-file-name "project.clj" path)))
-    (dolist (d '("src/main/clojure/" "src/test/"
-                 "target/classes/" "target/dependency/"))
-      (add-to-list 'swank-clojure-classpath (expand-file-name d path) t))
-    (add-to-list 'swank-clojure-extra-vm-args
-                 (format "-Dclojure.compile.path=%s"
-                         (expand-file-name "target/classes/" path))))
+    (add-to-list 'swank-clojure-classpath (expand-file-name "src/" path))
+    (add-to-list 'swank-clojure-classpath (expand-file-name "test/" path))
 
-  (run-hooks 'swank-clojure-project-hook)
-  (swank-clojure-add-slime-implementation)
+    ;; For Maven style project layouts
+    (when (or (file-exists-p (expand-file-name "pom.xml" path))
+              (file-exists-p (expand-file-name "project.clj" path)))
+      (dolist (d '("src/main/clojure/" "src/test/"
+                   "target/classes/" "target/dependency/"))
+        (add-to-list 'swank-clojure-classpath (expand-file-name d path) t))
+      (add-to-list 'swank-clojure-extra-vm-args
+                   (format "-Dclojure.compile.path=%s"
+                           (expand-file-name "target/classes/" path))))
+    (run-hooks 'swank-clojure-project-hook)
+    (swank-clojure-add-slime-implementation)
 
-  (save-window-excursion
-    (slime)))
+    (save-window-excursion
+      (slime))))
 
 ;;;###autoload
 (add-hook 'slime-load-hook 'swank-clojure-add-slime-implementation)
