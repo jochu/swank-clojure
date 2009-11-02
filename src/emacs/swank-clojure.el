@@ -245,6 +245,7 @@ The `path' variable is bound to the project root when these functions run.")
                                    (if (file-directory-p l)
                                        (directory-files l t ".jar$")))))
 
+    (add-to-list 'swank-clojure-classpath (expand-file-name "classes/" path))
     (add-to-list 'swank-clojure-classpath (expand-file-name "src/" path))
     (add-to-list 'swank-clojure-classpath (expand-file-name "test/" path))
 
