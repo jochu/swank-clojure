@@ -138,12 +138,14 @@ will be used over paths too.)"
 
 (defun swank-clojure-check-install ()
   "Prompt to install Clojure if it's not already present."
-  (when (and (not (file-exists-p swank-clojure-jar-home))
+  (when (and (not swank-clojure-classpath)
+             (not (file-exists-p swank-clojure-jar-home))
              (y-or-n-p "It looks like Clojure is not installed. Install now? "))
     (make-directory swank-clojure-jar-home t)
+    ;; bug in url-retrieve-synchronously: must download in order of size
+    (swank-clojure-download-jar "swank-clojure-1.0-RC1")
     (swank-clojure-download-jar "clojure-1.0.0")
     (swank-clojure-download-jar "clojure-contrib-1.0-compat")
-    (swank-clojure-download-jar "swank-clojure-1.0-RC1")
     (setq swank-clojure-classpath (swank-clojure-default-classpath))))
 
 ;;;###autoload
