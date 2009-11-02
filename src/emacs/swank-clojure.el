@@ -14,6 +14,7 @@
 ;; License as distributed with Emacs (press C-h C-c to view it).
 ;;
 
+(require 'assoc)
 (require 'slime)
 (require 'clojure-mode)
 
@@ -98,7 +99,8 @@ For example -Xmx512m or -Dsun.java2d.noddraw=true"
      "(require 'swank.loader)\n\n(swank.loader/init)\n\n")
    "(require 'swank.swank)\n\n"
    (when (boundp 'slime-protocol-version)
-     (format "(swank.swank/ignore-protocol-version %S)\n\n" slime-protocol-version))
+     (format "(swank.swank/ignore-protocol-version %S)\n\n"
+             slime-protocol-version))
    (format "(swank.swank/start-server %S :encoding %S)\n\n"
            file (format "%s" (slime-coding-system-cl-name encoding)))))
 
@@ -172,15 +174,12 @@ will be used over paths too.)"
       (list "--repl")))))
 
 ;;;###autoload
-(defun swank-clojure-add-slime-implementation ()
-    (setq slime-lisp-implementations
-          (cons `(clojure ,(swank-clojure-cmd) :init swank-clojure-init)
-                (remove-if #'(lambda (x) (eq (car x) 'clojure))
-                           slime-lisp-implementations))))
-
-;;;###autoload
-(eval-after-load 'slime
-  '(swank-clojure-add-slime-implementation))
+(defadvice slime-read-interactive-args (before add-clojure)
+  ;; Unfortunately we need to construct our Clojure-launching command
+  ;; at slime-launch time to reflect changes in the classpath. Slime
+  ;; has no mechanism to support this, so we must resort to advice.
+  (aput 'slime-lisp-implementations 'clojure
+        (list (swank-clojure-cmd) :init 'swank-clojure-init)))
 
 ;; Change the repl to be more clojure friendly
 (defun swank-clojure-slime-repl-modify-syntax ()
@@ -257,7 +256,6 @@ The `path' variable is bound to the project root when these functions run.")
                    (format "-Dclojure.compile.path=%s"
                            (expand-file-name "target/classes/" path))))
     (run-hooks 'swank-clojure-project-hook)
-    (swank-clojure-add-slime-implementation)
 
     (save-window-excursion
       (slime))))
