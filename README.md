@@ -85,7 +85,4 @@ This file is licensed under the terms of the GNU General Public
 License as distributed with Emacs (press C-h C-c to view it).
 
 [1] - [ELPA](http://tromey.com/elpa/install.html) is the Emacs Lisp
-  Package Archive. If you need to install manually for some reason,
-  use M-x package-install-from-buffer. You will need to handle the
-  dependencies manually in that case: slime.el and clojure-mode.el.
-
+  Package Archive. It brings a real package manager to Emacs.
