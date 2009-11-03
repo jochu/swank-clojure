@@ -31,7 +31,12 @@ structure based on some existing Clojure conventions:
   target/dependency - added if pom.xml exists (maven-style)
 
 You can embed swank in your project and connect via Emacs to an
-already-running instance. TODO: explain this.
+already-running instance:
+
+    (use 'swank.swank)
+    (start-server "/tmp/swank-port.txt" :port 14005)
+
+Then use M-x slime-connect to connect from within Emacs.
 
 ## Usage
 
@@ -61,6 +66,16 @@ The mailing list is at http://groups.google.com/group/swank-clojure
 and the author can often be contacted in #clojure on
 Freenode. Contributions are preferred as either Github pull requests
 or using "git format-patch".
+
+## Installing from Source
+
+    $ git clone git://github.com/technomancy/slime.git
+    $ git clone git://github.com/technomancy/clojure-mode.el
+
+Open slime/slime.el, slime/contrib/slime-repl.el,
+clojure-mode/clojure-mode.el, and src/emacs/swank-clojure.el and hit
+M-x package-install-from-buffer in each. You will get compiler
+warnings, but they should not be fatal.
 
 ## License
 
