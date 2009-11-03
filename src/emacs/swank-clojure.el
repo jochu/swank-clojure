@@ -129,12 +129,17 @@ will be used over paths too.)"
                           (concat swank-clojure-download-location
                                   name ".jar"))))
     (save-excursion
-      (set-buffer download-buffer)
-      ;; TODO: check HTTP response code
-      (re-search-forward "^$" nil 'move)
-      (delete-region (point-min) (+ 1 (point)))
-      (write-file (concat swank-clojure-jar-home "/" name ".jar"))
-      (kill-buffer))))
+      (condition-case e
+          (progn
+            (set-buffer download-buffer)
+            (re-search-forward "HTTP/[0-9]\.[0-9] 200 OK")
+            (re-search-forward "^$" nil 'move)
+            (delete-region (point-min) (+ 1 (point)))
+            (write-file (concat swank-clojure-jar-home "/" name ".jar"))
+            (kill-buffer))
+        (error
+         (delete-directory swank-clojure-jar-home t)
+         (error "Failed to download Clojure jars."))))))
 
 (defun swank-clojure-check-install ()
   "Prompt to install Clojure if it's not already present."
