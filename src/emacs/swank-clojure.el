@@ -14,7 +14,6 @@
 ;; License as distributed with Emacs (press C-h C-c to view it).
 ;;
 
-(require 'assoc)
 (require 'slime)
 (require 'clojure-mode)
 
@@ -185,6 +184,7 @@ will be used over paths too.)"
   ;; Unfortunately we need to construct our Clojure-launching command
   ;; at slime-launch time to reflect changes in the classpath. Slime
   ;; has no mechanism to support this, so we must resort to advice.
+  (require 'assoc)
   (aput 'slime-lisp-implementations 'clojure
         (list (swank-clojure-cmd) :init 'swank-clojure-init)))
 
