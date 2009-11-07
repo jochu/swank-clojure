@@ -255,10 +255,13 @@ The `path' variable is bound to the project root when these functions run.")
     (add-to-list 'swank-clojure-classpath (expand-file-name "test/" path))
 
     ;; For Maven style project layouts
-    (when (or (file-exists-p (expand-file-name "pom.xml" path))
-              (file-exists-p (expand-file-name "project.clj" path)))
-      (dolist (d '("src/main/clojure/" "src/test/"
+    (when (file-exists-p (expand-file-name "pom.xml" path))
+      (dolist (d '("src/main/clojure/" "src/test/clojure/"
                    "target/classes/" "target/dependency/"))
+        (add-to-list 'swank-clojure-classpath (expand-file-name d path) t))
+      (dolist (d (let ((l (expand-file-name "target/dependency/" path)))
+                   (if (file-directory-p l)
+                       (directory-files l t ".jar$"))))
         (add-to-list 'swank-clojure-classpath (expand-file-name d path) t))
       (add-to-list 'swank-clojure-extra-vm-args
                    (format "-Dclojure.compile.path=%s"
