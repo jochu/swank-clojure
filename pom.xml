@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.codestuffs.clojure</groupId>
-  <artifactId>swank-clojure</artifactId>
+  <groupId>org.clojure</groupId>
   <packaging>jar</packaging>
   <version>1.0-RC1</version>
-  <name>SWANK-Clojure</name>
+  <name>swank-clojure</name>
+  <artifactId>${name}</artifactId>
   <description>SWANK server connecting Clojure to Emacs SLIME</description>
   <inceptionYear>2008</inceptionYear>
   <url>http://github.com/jochu/swank-clojure</url>
@@ -64,7 +64,6 @@
             <namespace>!swank.clj-contrib.pprint</namespace>
             <namespace>!swank.clj-contrib.macroexpand</namespace>
             <namespace>!swank.commands.basic</namespace>
-            <namespace>!swank.swank</namespace>
           </namespaces>
         </configuration>
         <executions>

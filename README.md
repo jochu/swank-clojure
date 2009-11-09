@@ -16,6 +16,9 @@ for Emacs) with Clojure.
    symlink the compiled jar to ~/.swank-clojure/clojure-$VERSION.jar
    after removing the old version.
 
+(See also Installing from Source below if you want to use the
+absolute latest version.)
+
 ## Project
 
 You can also start a Slime session for a given project:
@@ -33,10 +36,14 @@ structure based on some existing Clojure conventions:
 You can embed swank in your project and connect via Emacs to an
 already-running instance:
 
-    (use 'swank.swank)
-    (start-server "/tmp/swank-port.txt" :port 14005)
+    (ns my-app
+      (:use [swank.swank :as swank]))
+    (swank/start-repl) ;; optionally takes a port argument
 
 Then use M-x slime-connect to connect from within Emacs.
+
+You can also launch the server directly from the "java" command-line
+program if you use "swank.swank" as your main class.
 
 ## Usage
 
@@ -67,6 +74,8 @@ and the author can often be contacted in #clojure on
 Freenode. Contributions are preferred as either Github pull requests
 or using "git format-patch".
 
+Please use standard Emacs indentation with no tabs.
+
 ## Installing from Source
 
     $ git clone git://github.com/technomancy/slime.git
@@ -74,8 +83,8 @@ or using "git format-patch".
 
 Open slime/slime.el, slime/contrib/slime-repl.el,
 clojure-mode/clojure-mode.el, and src/emacs/swank-clojure.el and hit
-M-x package-install-from-buffer in each. You will get compiler
-warnings, but they should not be fatal.
+M-x package-install-from-buffer in each buffer in order. You will get
+compiler warnings, but they should not be fatal.
 
 ## License
 
