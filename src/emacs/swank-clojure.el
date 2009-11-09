@@ -78,11 +78,6 @@ For example -Xmx512m or -Dsun.java2d.noddraw=true"
   :type 'boolean
   :group 'swank-clojure)
 
-;; TODO: point this to a more reliable host... (ideally github, but
-;; they require flash for file uploads. laaaaaame!)
-(defvar swank-clojure-download-location "http://repo.technomancy.us/"
-  "Location from which to download Clojure dependencies.")
-
 (defface swank-clojure-dim-trace-face
   '((((class color) (background dark))
      (:foreground "grey50"))
@@ -123,10 +118,9 @@ For example -Xmx512m or -Dsun.java2d.noddraw=true"
 will be used over paths too.)"
   (mapconcat 'identity (mapcar 'expand-file-name paths) path-separator))
 
-(defun swank-clojure-download-jar (name)
-  (let ((download-buffer (url-retrieve-synchronously
-                          (concat swank-clojure-download-location
-                                  name ".jar"))))
+(defun swank-clojure-download-jar (url)
+  (let ((jar-name (car (last (split-string url "/"))))
+        (download-buffer (url-retrieve-synchronously url)))
     (save-excursion
       (condition-case e
           (progn
@@ -134,8 +128,8 @@ will be used over paths too.)"
             (re-search-forward "HTTP/[0-9]\.[0-9] 200 OK")
             (re-search-forward "^$" nil 'move)
             (delete-region (point-min) (+ 1 (point)))
-            (write-file (concat swank-clojure-jar-home "/" name ".jar"))
-            (kill-buffer))
+            (write-file (concat swank-clojure-jar-home "/" jar-name))
+            (kill-buffer))    
         (error
          (delete-directory swank-clojure-jar-home t)
          (error "Failed to download Clojure jars."))))))
@@ -147,9 +141,12 @@ will be used over paths too.)"
              (y-or-n-p "It looks like Clojure is not installed. Install now? "))
     (make-directory swank-clojure-jar-home t)
     ;; bug in url-retrieve-synchronously: must download in order of size
-    (swank-clojure-download-jar "swank-clojure-1.0-RC1")
-    (swank-clojure-download-jar "clojure-1.0.0")
-    (swank-clojure-download-jar "clojure-contrib-1.0-compat")
+    (swank-clojure-download-jar (concat "http://repo.technomancy.us/"
+                                        "swank-clojure-1.0-RC1.jar"))
+    (swank-clojure-download-jar (concat "http://repo1.maven.org/maven2/org/"
+                                        "clojure/clojure/1.0.0/clojure-1.0.0.jar"))
+    (swank-clojure-download-jar (concat "http://repo.technomancy.us/"
+                                        "clojure-contrib-1.0-compat.jar"))
     (setq swank-clojure-classpath (swank-clojure-default-classpath))))
 
 ;;;###autoload

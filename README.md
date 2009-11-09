@@ -33,6 +33,12 @@ structure based on some existing Clojure conventions:
 * src/main/clojure, src/test/, target/classes, 
   target/dependency - added if pom.xml exists (maven-style)
 
+Your project should include *all* its dependent jars (including
+Clojure and Swank-Clojure if desired) in either lib/ or
+target/dependency. If it depends on more than just Clojure, Contrib,
+and Swank, it's recommended that you use a dependency manager such as
+maven to place these.
+
 You can embed swank in your project and connect via Emacs to an
 already-running instance:
 

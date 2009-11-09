@@ -11,3 +11,5 @@ TODO
 ** xref for all callers of a function?
 * Known bugs
 ** TODO *in* only works from *inferior-lisp*
+** TODO certain project classes break class-browse: (unconfirmed)
+        http://groups.google.com/group/swank-clojure/msg/7ab11f8698ad52d9
