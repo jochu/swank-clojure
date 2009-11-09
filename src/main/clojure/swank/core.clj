@@ -34,7 +34,8 @@
       ~@body
       (finally
        (when-not (= last-ns# *ns*)
-         (send-to-emacs `(:new-package ~(str (ns-name *ns*)) ~(str (ns-name *ns*)))))))))
+         (send-to-emacs `(:new-package ~(str (ns-name *ns*))
+                                       ~(str (ns-name *ns*)))))))))
 
 (defmacro dothread-swank [& body]
   `(dothread-keeping-clj [*current-connection*]
@@ -108,7 +109,8 @@
                          '(("CAUSE" "Throw cause of this exception"))))
            error-stack (exception-stacktrace thrown)
            continuations (list id)]
-       (send-to-emacs (list :debug (current-thread) level message options error-stack continuations))
+       (send-to-emacs (list :debug (current-thread) level message
+                            options error-stack continuations))
        (send-to-emacs (list :debug-activate (current-thread) level true))
        (debug-loop)
        (send-to-emacs (list :debug-return (current-thread) level nil))))))
@@ -125,7 +127,8 @@
        (let [form (cons f (rest form))
              result (doall-seq (eval-in-emacs-package form))]
          (run-hook *pre-reply-hook*)
-         (send-to-emacs `(:return ~(thread-name (current-thread)) (:ok ~result) ~id)))
+         (send-to-emacs `(:return ~(thread-name (current-thread))
+                                  (:ok ~result) ~id)))
        ;; swank function not defined, abort
        (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id))))
    (catch Throwable t
@@ -141,7 +144,8 @@
        (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id))
        (throw t))
 
-     ;; start sldb, don't bother here because you can't actually recover with java
+     ;; start sldb, don't bother here because you can't actually
+     ;; recover with java
      (invoke-debugger (if *debug-swank-clojure*
                         t
                         (.getCause t))
@@ -211,7 +215,6 @@
    ([ev conn]
       (let [[action & args] ev]
         (cond
-          
          (= action :emacs-rex)
          (let [[form-string package thread id] args
                thread (thread-for-evaluation thread conn)]
@@ -224,7 +227,8 @@
 
          (one-of? action
                   :presentation-start :presentation-end
-                  :new-package :new-features :ed :percent-apply :indentation-update
+                  :new-package :new-features :ed :percent-apply
+                  :indentation-update
                   :eval-no-wait :background-message :inspect)
          (binding [*print-level* nil, *print-length* nil]
            (write-to-connection conn ev))
@@ -241,9 +245,9 @@
          (let [[thread & args] args]
            (dosync
             (cond
-              (and (true? thread) (seq @*active-threads*)) (.stop #^Thread (first @*active-threads*))
+             (and (true? thread) (seq @*active-threads*))
+             (.stop #^Thread (first @*active-threads*))
               (= thread :repl-thread) (.stop #^Thread @(conn :repl-thread)))))
-         
          :else
          nil))))
 
