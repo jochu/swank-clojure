@@ -89,10 +89,10 @@ Then launch Slime with M-- M-x slime $LISP instead of just M-x slime.
 
 ## Community
 
-The mailing list is at http://groups.google.com/group/swank-clojure
-and the author can often be contacted in #clojure on
-Freenode. Contributions are preferred as either Github pull requests
-or using "git format-patch".
+The [mailing list](http://groups.google.com/group/swank-clojure) and
+#clojure on Freenode are the best places to bring up questions/issues.
+Contributions are preferred as either Github pull requests or using
+"git format-patch".
 
 Please use standard Emacs indentation with no tabs.
 

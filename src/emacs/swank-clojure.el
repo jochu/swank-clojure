@@ -161,7 +161,7 @@ will be used over paths too.)"
     (make-directory swank-clojure-jar-home t)
     ;; bug in url-retrieve-synchronously: must download in order of size
     (swank-clojure-download-jar (concat "http://repo.technomancy.us/"
-                                        "swank-clojure-1.0-RC1.jar"))
+                                        "swank-clojure-1.0.jar"))
     (swank-clojure-download-jar (concat "http://repo1.maven.org/maven2/org/"
                                         "clojure/clojure/1.0.0/clojure-1.0.0.jar"))
     (swank-clojure-download-jar (concat "http://repo.technomancy.us/"
