@@ -232,7 +232,7 @@ The `path' variable is bound to the project root when these functions run.")
   "Setup classpath for a clojure project and starts a new SLIME session.
   Kills existing SLIME session, if any."
   (interactive (list
-                (ido-read-directory-name
+                (read-directory-name
                  "Project root: "
                  (if (functionp 'locate-dominating-file) ; Emacs 23 only
                      (locate-dominating-file default-directory "src")
@@ -254,7 +254,7 @@ The `path' variable is bound to the project root when these functions run.")
     ;; For Maven style project layouts
     (when (file-exists-p (expand-file-name "pom.xml" path))
       (dolist (d '("src/main/clojure/" "src/test/clojure/"
-                   "target/classes/" "target/dependency/"))
+                   "target/test-classes/" "target/classes/" "target/dependency/"))
         (add-to-list 'swank-clojure-classpath (expand-file-name d path) t))
       (dolist (d (let ((l (expand-file-name "target/dependency/" path)))
                    (if (file-directory-p l)

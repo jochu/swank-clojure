@@ -39,6 +39,9 @@ target/dependency. If it depends on more than just Clojure, Contrib,
 and Swank, it's recommended that you use a dependency manager such as
 maven to place these.
 
+If you add jars to lib/ and want to use them, simply invoke M-x
+swank-clojure-project again to restart with them on the classpath.
+
 You can embed swank in your project and connect via Emacs to an
 already-running instance:
 
