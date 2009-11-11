@@ -16,8 +16,16 @@ for Emacs) with Clojure.
    symlink the compiled jar to ~/.swank-clojure/clojure-$VERSION.jar
    after removing the old version.
 
+If swank-clojure-classpath is not set within Emacs, it will assume
+that you want swank-clojure to handle it for you and will download and
+configure the necessary jars itself. If you already have a checkout of
+Clojure and/or Contrib that you would like to use, just set
+swank-clojure-classpath to a list that includes both those jars as
+well as swank-clojure.jar. If you already have a project with all its
+dependencies set up, see M-x swank-clojure-project documented below.
+
 (See also Installing from Source below if you want to use the
-absolute latest version.)
+absolute latest version of swank-clojure.)
 
 ## Project
 
@@ -32,18 +40,21 @@ structure based on some existing Clojure conventions:
 * lib/ - all .jars in here are added to the classpath
 * src/main/clojure, src/test/, target/classes, 
   target/dependency - added if pom.xml exists (maven-style)
+  All jars in target/dependency will be added as well.
 
 Your project should include *all* its dependent jars (including
-Clojure and Swank-Clojure if desired) in either lib/ or
-target/dependency. If it depends on more than just Clojure, Contrib,
-and Swank, it's recommended that you use a dependency manager such as
-maven to place these.
+Clojure and Swank-Clojure) in either lib/ or target/dependency. If it
+depends on more than just Clojure, Contrib, and Swank, it's
+recommended that you use a dependency manager such as maven to place
+these.
 
 If you add jars to lib/ and want to use them, simply invoke M-x
 swank-clojure-project again to restart with them on the classpath.
 
-You can embed swank in your project and connect via Emacs to an
-already-running instance:
+## Embedding
+
+You can embed swank in your project, start the server from within your
+own code, and connect via Emacs to that instance:
 
     (ns my-app
       (:use [swank.swank :as swank]))
@@ -51,21 +62,21 @@ already-running instance:
 
 Then use M-x slime-connect to connect from within Emacs.
 
-You can also launch the server directly from the "java" command-line
-program if you use "swank.swank" as your main class.
+You can also start the server directly from the "java" command-line
+launcher if you use "swank.swank" as your main class.
 
 ## Usage
 
 Common commands:
 
-* M-TAB: Autocomplete symbol at point
-* C-x C-e: Eval the form under the point
-* C-c C-k: Compile the current buffer
-* M-.: Jump to the definition of a var
-* C-c S-i: Inspect a value
-* C-c C-m: Macroexpand the call under the point
-* C-c C-d C-d: Look up documentation for a var
-* C-c C-z: Switch to the repl buffer
+* **M-TAB**: Autocomplete symbol at point
+* **C-x C-e**: Eval the form under the point
+* **C-c C-k**: Compile the current buffer
+* **M-.**: Jump to the definition of a var
+* **C-c S-i**: Inspect a value
+* **C-c C-m**: Macroexpand the call under the point
+* **C-c C-d C-d**: Look up documentation for a var
+* **C-c C-z**: Switch to the repl buffer
 
 ## Keeping Common Lisp
 
@@ -87,13 +98,19 @@ Please use standard Emacs indentation with no tabs.
 
 ## Installing from Source
 
+Swank-clojure is really two pieces: a server written in Clojure and a
+launcher written in Elisp. Using the latest version of the Elisp
+should pull in the latest version of the Clojure code as well, but
+you'll need to manually install the elisp dependencies as well.
+
     $ git clone git://github.com/technomancy/slime.git
     $ git clone git://github.com/technomancy/clojure-mode.el
 
 Open slime/slime.el, slime/contrib/slime-repl.el,
 clojure-mode/clojure-mode.el, and src/emacs/swank-clojure.el and hit
 M-x package-install-from-buffer in each buffer in order. You will get
-compiler warnings, but they should not be fatal.
+compiler warnings, but they should not be fatal. Restart Emacs, and
+you should be able to use M-x slime.
 
 ## License
 

@@ -5,13 +5,32 @@
 ;; Authors: Jeffrey Chu <jochu0@gmail.com>
 ;;          Phil Hagelberg <technomancy@gmail.com>
 ;;
-;; URL: http://www.emacswiki.org/cgi-bin/wiki/ClojureMode
+;; URL: http://github.com/technomancy/swank-clojure
 ;; Version: 1.0
 ;; Keywords: languages, lisp
 ;; Package-Requires: ((slime-repl "20091016") (clojure-mode "1.6"))
 ;;
 ;; This file is licensed under the terms of the GNU General Public
 ;; License as distributed with Emacs (press C-h C-c to view it).
+;;
+;;; Commentary:
+;;
+;; The purpose of this file is to set up `slime-lisp-implementations'
+;; to allow SLIME to communicate with the Swank server implemented in
+;; Clojure. There are three ways to launch SLIME:
+;;
+;; 1. Standalone M-x slime: swank-clojure will download the jars for
+;;    Clojure 1.0, contrib, and swank-clojure and connect to it. Good
+;;    for beginners wanting to try things out!
+;;
+;; 2. Custom classpath: If you have your own newer copies of Clojure
+;;    and other jars you'd like to use, set swank-clojure-classpath to
+;;    point to them, then hit M-x slime.
+;;
+;; 3. Project: Put your project's dependencies in the lib/ directory,
+;;    then launch M-x swank-clojure-project.
+;;
+;;; Code:
 ;;
 
 (require 'slime)
