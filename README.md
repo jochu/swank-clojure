@@ -107,7 +107,7 @@ you'll need to manually install the elisp dependencies as well.
     $ git clone git://github.com/technomancy/clojure-mode.el
 
 Open slime/slime.el, slime/contrib/slime-repl.el,
-clojure-mode/clojure-mode.el, and src/emacs/swank-clojure.el and hit
+clojure-mode/clojure-mode.el, and swank-clojure.el and hit
 M-x package-install-from-buffer in each buffer in order. You will get
 compiler warnings, but they should not be fatal. Restart Emacs, and
 you should be able to use M-x slime.

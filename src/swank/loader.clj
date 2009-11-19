@@ -1,6 +1,6 @@
 (ns swank.loader
-  (:require (swank.util [sys :as sys] [clojure :as clj]))
-  (:import (java.io File)))
+  (:require [swank.util [sys :as sys] [clojure :as clj]])
+  (:import [java.io File]))
 
 (defonce #^File *swank-source-path*
   (.getParentFile

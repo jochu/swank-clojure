@@ -1,1 +1,5 @@
-target
+classes/
+lib/
+swank-clojure.jar
+Manifest.txt
+pom.xml
