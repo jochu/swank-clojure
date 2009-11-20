@@ -4,11 +4,10 @@
   (:import [java.io File]))
 
 (defonce #^File *swank-source-path*
-  (.getParentFile
-   (File.
-    (.getFile
-     (.getResource (clojure.lang.RT/baseLoader)
-                    #^String *file*)))))
+  (if-let [resource (.getResource (clojure.lang.RT/baseLoader)
+                                  #^String *file*)]
+    (.getParentFile (File. (.getFile resource)))))
+
 (defonce #^File *swank-compile-path*
   (File. (str (sys/user-home-path)
               File/separator
