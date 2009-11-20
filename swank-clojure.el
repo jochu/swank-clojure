@@ -247,6 +247,16 @@ will be used over paths too.)"
 The `path' variable is bound to the project root when these functions run.")
 
 ;;;###autoload
+(defun swank-clojure-javadoc (classname)
+  "Show the javadoc for classname using clojure.contrib.repl-utils/javadoc"
+  (interactive (list (read-from-minibuffer "Javadoc for: " (slime-sexp-at-point))))
+  (slime-eval
+   `(swank:eval-and-grab-output
+     ,(concat "(try
+       (require 'clojure.contrib.repl-utils)
+       (@(ns-resolve 'clojure.contrib.repl-utils 'javadoc) " classname ")
+       (catch Throwable t (.getMessage t)))"))))
+
 (defun swank-clojure-project (path)
   "Setup classpath for a clojure project and starts a new SLIME session.
   Kills existing SLIME session, if any."
