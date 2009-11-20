@@ -1,0 +1,15 @@
+TODO
+
+* Packaging (elpa branch)
+** TODO Upload jars to better host?
+** TODO Submit to ELPA
+* New commands
+** unmap-ns
+** classpath-completion (unify with import)
+** unknown vars should search known namespaces and prompt for use insertion
+** M-. should work for namespaces
+** xref for all callers of a function?
+* Known bugs
+** TODO *in* only works from *inferior-lisp*
+** TODO certain project classes break class-browse: (unconfirmed)
+        http://groups.google.com/group/swank-clojure/msg/7ab11f8698ad52d9

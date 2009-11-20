@@ -1,7 +1,6 @@
-(remove-ns 'swank.commands.completion)
 (ns swank.commands.completion
   (:use (swank util core commands)
-        (swank.util string clojure java)))
+        (swank.util string clojure java class-browse)))
 
 (defn potential-ns
   "Returns a list of potential namespace completions for a given
@@ -49,6 +48,16 @@
   ([#^Class class]
      (map method-name (static-methods class))))
 
+(defn potiential-classes-on-path
+  "Returns a list of Java class and Clojure package names found on the current
+  classpath. To minimize noise, list is nil unless a '.' is present in the search
+  string, and nested classes are only shown if a '$' is present."
+  ([symbol-string]
+	 (when (.contains symbol-string ".")
+	   (if (.contains symbol-string "$")
+		 @nested-classes
+		 @top-level-classes))))
+
 (defn resolve-class
   "Attempts to resolve a symbol into a java Class. Returns nil on
    failure."
@@ -81,7 +90,8 @@
 (defslimefn simple-completions [symbol-string package]
   (try
    (let [[sym-ns sym-name] (symbol-name-parts symbol-string)
-         potential         (potential-completions (when sym-ns (symbol sym-ns)) (ns-name (maybe-ns package)))
+		 potential         (concat (potential-completions (when sym-ns (symbol sym-ns)) (ns-name (maybe-ns package)))
+								   (potiential-classes-on-path symbol-string))
          matches           (seq (sort (filter #(.startsWith #^String % symbol-string) potential)))]
      (list matches
            (if matches

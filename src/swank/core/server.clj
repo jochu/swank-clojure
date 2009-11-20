@@ -23,12 +23,11 @@
    directory).
 
    See also: `accept-authenticated-connection'"
-  ([] (try
-       (let [slime-secret-file (File. (str (user-home-path) File/separator ".slime-secret"))]
-         (when (and (.isFile slime-secret-file) (.canRead slime-secret-file))
-           (with-open [secret (BufferedReader. (FileReader. slime-secret-file))]
-             (.readLine secret))))
-       (catch Throwable e nil))))
+  ([] (failing-gracefully
+        (let [slime-secret-file (File. (str (user-home-path) File/separator ".slime-secret"))]
+          (when (and (.isFile slime-secret-file) (.canRead slime-secret-file))
+            (with-open [secret (BufferedReader. (FileReader. slime-secret-file))]
+              (.readLine secret)))))))
 
 (defn- accept-authenticated-connection ;; rename to authenticate-socket, takes in a connection
   "Accepts and returns new connection if it is from an authenticated
@@ -44,7 +43,7 @@
      (returning [conn (make-connection socket (get opts :encoding *default-encoding*))]
        (if-let [secret (slime-secret)]
          (when-not (= (read-from-connection conn) secret)
-           (.close socket))
+           (close-socket! socket))
          conn))))
 
 (defn- make-output-redirection
@@ -60,45 +59,42 @@
   (with-connection (accept-authenticated-connection socket opts)
     (let [out-redir (make-output-redirection *current-connection*)]
       (binding [*out* out-redir
-                *err* (java.io.PrintWriter. out-redir)]
+                *err* out-redir]
         (dosync (ref-set (*current-connection* :writer-redir) *out*))
         (dosync (alter *connections* conj *current-connection*))
         (connection-serve *current-connection*)
         (not dont-close)))))
 
 ;; Setup frontent
-(comment
-  (defn start-swank-socket-server!
-    "Starts and returns the socket server as a swank host. Takes an
-  optional set of options as a map:
+(defn start-swank-socket-server!
+  "Starts and returns the socket server as a swank host. Takes an
+   optional set of options as a map:
 
     :announce - an fn that will be called and provided with the
       listening port of the newly established server. Default: none.
 
     :dont-close - will accept multiple connections if true. Default: false."
-    ([server connection-serve] (start-swank-socket-server! connection-serve {}))
-    ([server connection-serve options]
-       (start-server-socket! server
-                             #(socket-serve connection-serve % options)
-                             (options :dont-close))
-       (when-let [announce (options :announce)]
-         (announce (.getLocalPort server)))
-       server)))
+  ([server connection-serve] (start-swank-socket-server! connection-serve {}))
+  ([server connection-serve options]
+     (start-server-socket! server
+                           connection-serve
+                           (options :dont-close))
+     (when-let [announce (options :announce)]
+       (announce (.getLocalPort server)))
+     server))
 
 (defn setup-server
   "The port it started on will be called as an argument to (announce-fn
    port). A connection will then be created and (connection-serve conn)
    will then be called."
   ([port announce-fn connection-serve opts]
-     (let [server (make-server-socket {:port    port
-                                       :host    (opts :host)
-                                       :backlog (opts :backlog 0)})
-           port   (.getLocalPort server)]
-       (start-server-socket! server
-                             #(socket-serve connection-serve % opts)
-                             (opts :dont-close))
-       (announce-fn port)
-       port)))
+     (start-swank-socket-server!
+      (make-server-socket {:port    port
+                           :host    (opts :host)
+                           :backlog (opts :backlog 0)})
+      #(socket-serve connection-serve % opts)
+      {:announce announce-fn
+       :dont-close (opts :dont-close)})))
 
 ;; Announcement functions
 (defn simple-announce [port]

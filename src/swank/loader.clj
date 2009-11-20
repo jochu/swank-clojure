@@ -1,13 +1,13 @@
 (ns swank.loader
-  (:require (swank.util [sys :as sys] [clojure :as clj]))
-  (:import (java.io File)))
+  (:require [swank.util.sys :as sys]
+            [swank.util.clojure :as clj])
+  (:import [java.io File]))
 
 (defonce #^File *swank-source-path*
-  (.getParentFile
-   (File.
-    (.getFile
-     (.getResource (clojure.lang.RT/baseLoader)
-                    #^String *file*)))))
+  (if-let [resource (.getResource (clojure.lang.RT/baseLoader)
+                                  #^String *file*)]
+    (.getParentFile (File. (.getFile resource)))))
+
 (defonce #^File *swank-compile-path*
   (File. (str (sys/user-home-path)
               File/separator

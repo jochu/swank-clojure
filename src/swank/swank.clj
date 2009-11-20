@@ -9,17 +9,17 @@
 ;;;
 
 (ns swank.swank
-  (:use (swank core)
-        (swank.core connection server)
-        (swank.util.concurrent thread))
-  (:require (swank.util.concurrent [mbox :as mb])
-            (swank commands)
-            (swank.commands basic indent completion
-                            contrib inspector import)))
+  (:use [swank.core]
+        [swank.core connection server]
+        [swank.util.concurrent thread]
+        [clojure.main :only [repl]])
+  (:require [swank.commands]
+            [swank.commands basic indent completion
+             contrib inspector])
+  (:gen-class))
 
 (defn ignore-protocol-version [version]
   (dosync (ref-set *protocol-version* version)))
-
 
 (defn- connection-serve [conn]
   (let [control
@@ -54,3 +54,19 @@
                        (simple-announce port))
                      connection-serve
                      opts))))
+
+(defn start-repl
+  "Start the server wrapped in a repl. Use this to embed swank in your code."
+  ([port]
+     (let [stop (atom false)]
+       (repl :read (fn [rprompt rexit]
+                     (if @stop rexit
+                         (do (swap! stop (fn [_] true))
+                             `(do (ignore-protocol-version nil)
+                                  (start-server "/tmp/slime-port.txt"
+                                                :encoding "iso-latin-1-unix"
+                                                :port ~port)))))
+             :need-prompt #(identity false))))
+  ([] (start-repl 4005)))
+
+(def -main start-repl)

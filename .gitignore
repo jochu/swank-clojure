@@ -1,4 +1,5 @@
-*.jar
-*.class
-*.zip
-*.tar.gz
+classes/
+lib/
+swank-clojure.jar
+Manifest.txt
+pom.xml
