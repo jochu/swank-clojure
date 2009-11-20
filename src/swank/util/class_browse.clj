@@ -115,10 +115,12 @@
   returns a list of all class file paths found, each relative to its parent
   directory or jar on the classpath."
   ([cp]
-     (let [entries (enumeration-seq
-                    (StringTokenizer. cp File/pathSeparator))
-           locs (mapcat expand-wildcard entries)]
-       (reduce concat (for [loc locs] (path-class-files loc loc)))))
+     (if cp
+       (let [entries (enumeration-seq
+                      (StringTokenizer. cp File/pathSeparator))
+             locs (mapcat expand-wildcard entries)]
+         (reduce concat (for [loc locs] (path-class-files loc loc))))
+       ()))
   ([cp & more]
      (reduce #(concat %1 (scan-paths %2)) (scan-paths cp) more)))
 
