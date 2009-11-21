@@ -257,6 +257,7 @@ The `path' variable is bound to the project root when these functions run.")
        (@(ns-resolve 'clojure.contrib.repl-utils 'javadoc) " classname ")
        (catch Throwable t (.getMessage t)))"))))
 
+;;;###autoload
 (defun swank-clojure-project (path)
   "Setup classpath for a clojure project and starts a new SLIME session.
   Kills existing SLIME session, if any."
