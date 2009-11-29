@@ -124,6 +124,7 @@ For example -Xmx512m or -Dsun.java2d.noddraw=true"
                 (re-search-forward regexp nil t))
         (match-string-no-properties 3)))))
 
+;;;###autoload
 (defun swank-clojure-slime-mode-hook ()
   (slime-mode 1)
   (set (make-local-variable 'slime-find-buffer-package-function)
