@@ -2,7 +2,9 @@
 
 [Swank-clojure](http://github.com/technomancy/swank-clojure) is an
 adapter that lets you use SLIME (the Superior Lisp Interaction Mode
-for Emacs) with Clojure.
+for Emacs) with Clojure. It's designed to work with GNU Emacs 22 and
+higher. It may work with forks like XEmacs or Aquamacs, but those are
+unsupported.
 
 ## Installation
 
