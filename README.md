@@ -6,37 +6,57 @@ for Emacs) with Clojure. It's designed to work with GNU Emacs 22 and
 higher. It may work with forks like XEmacs or Aquamacs, but those are
 unsupported.
 
+## Usage
+
+Depending on what you're using it for, Swank Clojure can be invoked in
+a few different ways:
+        
+1. Standalone Session: If you just hit M-x slime, swank-clojure will
+   download the jars for Clojure 1.0, contrib, and swank-clojure,
+   launch an instance, and connect to it. If you just want to try out
+   Clojure, this is all you need. Just get Swank Clojure through
+   [ELPA](http://tromey.com/elpa) and stop reading here. =)
+
+2. Custom classpath: If you want to hack on Clojure or Contrib, set
+   swank-clojure-classpath to a list of paths to the jars you want to
+   use and then hit M-x slime.
+
+3. Project: Put your project's dependencies in the lib/ directory,
+   (either manually or using
+   [leiningen](http://github.com/technomancy/leiningen) or Maven) then
+   launch M-x swank-clojure-project. Note that you must have
+   swank-clojure.jar in the lib/ directory, it will not automatically
+   add itself to the classpath as it did in past versions that had to
+   run from a checkout.
+
+4. Standalone Server: Users of leiningen or clojure-maven-plugin can
+   [launch a server from a
+   shell](http://wiki.github.com/technomancy/leiningen/emacs-integration)
+   and connect to it from within Emacs using M-x slime-connect.
+
+Because the JVM classpath can't be modified at runtime, you can't
+start a session with plain M-x slime and then decide to work on your
+project; you'll need to start a new slime session with M-x
+swank-clojure-project.
+
 ## Installation
 
-1. Install from ELPA using package.el[1].
-        
-2. Press M-x slime to start a new Clojure process. Press "y" when
-   asked if you want to install Clojure.
+Install [from ELPA](http://tromey.com/elpa) using package.el[1].
 
-3. Do you seriously need a third step? OK, if you want to use a newer
-   version of Clojure than 1.0 you will need to build it yourself and
-   symlink the compiled jar to ~/.swank-clojure/clojure-$VERSION.jar
-   after removing the old version.
+If you're only going to use #4 above, you'll only need the
+"slime-repl" package. Otherwise get the "swank-clojure" package.
 
-If swank-clojure-classpath is not set within Emacs, it will assume
-that you want swank-clojure to handle it for you and will download and
-configure the necessary jars itself. If you already have a checkout of
-Clojure and/or Contrib that you would like to use, just set
-swank-clojure-classpath to a list that includes both those jars as
-well as swank-clojure.jar. If you already have a project with all its
-dependencies set up, see M-x swank-clojure-project documented below.
+While it's possible to install swank-clojure manually, it's not
+recommended. ELPA will be included in the next version of Emacs and
+has been a standard piece of the Emacs ecosystem for a while
+now. See the "Installing from Source" section below if you wish to
+hack on a development version that hasn't been released yet.
 
-(See also Installing from Source below if you want to use the
-absolute latest version of swank-clojure.)
+## Project Layout
 
-## Project
-
-You can also start a Slime session for a given project:
-
-    M-x swank-clojure-project
-
-This will prompt for a project dir and set up the classpath for that
-structure based on some existing Clojure conventions:
+If you intend to use M-x swank-clojure-project, it will prompt for a
+project dir and set up the classpath for that structure based on some
+existing Clojure conventions:
 
 * src/, classes/, and test/ - added to the classpath
 * lib/ - all .jars in here are added to the classpath
@@ -47,11 +67,13 @@ structure based on some existing Clojure conventions:
 Your project should include *all* its dependent jars (including
 Clojure and Swank-Clojure) in either lib/ or target/dependency. If it
 depends on more than just Clojure, Contrib, and Swank, it's
-recommended that you use a dependency manager such as maven to place
-these.
+recommended that you use a dependency manager such as Leiningen to
+manage these.
 
-If you add jars to lib/ and want to use them, simply invoke M-x
-swank-clojure-project again to restart with them on the classpath.
+If you have a running session and you add jars to lib/, you need to
+start a new session. Invoke M-x swank-clojure-project to get a session
+with the new classpath in place. M-x slime-restart-inferior-lisp will
+restart the subprocess, but it does not recalculate the classpath.
 
 ## Embedding
 
@@ -67,9 +89,9 @@ Then use M-x slime-connect to connect from within Emacs.
 You can also start the server directly from the "java" command-line
 launcher if you use "swank.swank" as your main class.
 
-## Usage
+## Commands
 
-Common commands:
+Commonly-used commands:
 
 * **M-TAB**: Autocomplete symbol at point
 * **C-x C-e**: Eval the form under the point
@@ -79,6 +101,7 @@ Common commands:
 * **C-c C-m**: Macroexpand the call under the point
 * **C-c C-d C-d**: Look up documentation for a var
 * **C-c C-z**: Switch to the repl buffer
+* **C-c M-p**: Switch the repl namespace to match the current buffer
 
 ## Keeping Common Lisp
 
@@ -91,19 +114,22 @@ Then launch Slime with M-- M-x slime $LISP instead of just M-x slime.
 
 ## Community
 
-The [mailing list](http://groups.google.com/group/swank-clojure) 
-and #clojure on Freenode are the best places to bring up questions or
-issues. Contributions are preferred as either Github pull requests or
-using "git format-patch".
+The [mailing list](http://groups.google.com/group/swank-clojure) and
+clojure channel on Freenode are the best places to bring up
+questions/issues.
 
-Please use standard Emacs indentation with no tabs.
+Contributions are preferred as either Github pull requests or using
+"git format-patch" as is requested [for contributing to Clojure
+itself](http://clojure.org/patches). Please use standard indentation
+with no tabs, trailing whitespace, or lines longer than 80 columns. If
+you've got some time on your hands, reading this [style
+guide](http://mumble.net/~campbell/scheme/style.txt) wouldn't hurt
+either.
 
 ## Installing from Source
 
 Swank-clojure is really two pieces: a server written in Clojure and a
-launcher written in Elisp. Using the latest version of the Elisp
-should pull in the latest version of the Clojure code as well, but
-you'll need to manually install the elisp dependencies as well.
+launcher written in Elisp. The elisp parts are installed with:
 
     $ git clone git://github.com/technomancy/slime.git
     $ git clone git://github.com/technomancy/clojure-mode.el
@@ -113,6 +139,10 @@ clojure-mode/clojure-mode.el, and swank-clojure.el and hit
 M-x package-install-from-buffer in each buffer in order. You will get
 compiler warnings, but they should not be fatal. Restart Emacs, and
 you should be able to use M-x slime.
+
+The Clojure-side server is managed with
+[Leiningen](http://github.com/technomancy/leiningen). Use the "lein
+install" task to place it in your local repository.
 
 ## License
 
