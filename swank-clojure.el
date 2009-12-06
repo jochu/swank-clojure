@@ -151,7 +151,10 @@ will be used over paths too.)"
             (write-file (concat swank-clojure-jar-home "/" jar-name))
             (kill-buffer))    
         (error
-         (delete-directory swank-clojure-jar-home t)
+         ;; no recursive directory deletion on emacs 22 =(
+         (dolist (j (directory-files swank-clojure-jar-home t))
+           (delete-file j))
+         (delete-directory swank-clojure-jar-home)
          (error "Failed to download Clojure jars."))))))
 
 (defun swank-clojure-check-install ()
