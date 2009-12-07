@@ -159,7 +159,7 @@
     (map (fn [[match-result score var sym]]
            (if (var? var)
              (struct fuzzy-matching
-                     var nil (or (:name ^var)
+                     var nil (or (:name (meta var))
                                  (symbol (pr-str var)))
                      nil
                      score nil match-result)
@@ -265,7 +265,7 @@
   (let [make-var-meta (fn [m]
                         (fn [key]
                           (when-let [var (:var m)]
-                            (when-let [var-meta ^var]
+                            (when-let [var-meta (meta var)]
                               (get var-meta key)))))
         vm (make-var-meta m)]
     (set

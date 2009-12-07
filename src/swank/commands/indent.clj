@@ -58,7 +58,7 @@
    Otherwise return nil"
   ([find-in-cache var]
      (when-let [indent (var-indent-representation var)]
-       (let [name (:name ^var)]
+       (let [name (:name (meta var))]
          (when-not (= (find-in-cache name) indent)
            [name indent])))))
 
