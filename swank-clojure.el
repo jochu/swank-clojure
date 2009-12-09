@@ -92,9 +92,27 @@ For example -Xmx512m or -Dsun.java2d.noddraw=true"
   :group 'swank-clojure)
 
 (defcustom swank-clojure-compile-p nil
-  "Whether or not to instruct swank-clojure to swank files. Set
-  to nil if it's causing you problems."
+  "Whether to instruct swank-clojure to compile files. Set to nil
+  if it's causing you problems."
   :type 'boolean
+  :group 'swank-clojure)
+
+(defcustom swank-clojure-deps
+  (list (concat "http://repo.technomancy.us/"
+                "swank-clojure-1.0.jar")
+        (concat "http://repo1.maven.org/maven2/org/"
+                "clojure/clojure/1.0.0/clojure-1.0.0.jar")
+        (concat "http://repo.technomancy.us/"
+                "clojure-contrib-1.0-compat.jar"))
+  "A list of urls of jars required to run swank-clojure. If they
+don't exist in `swank-clojure-jar-home' and
+`swank-clojure-classpath' is not set, the user will be prompted
+to download them when invoking `slime'.
+
+Due to a bug in url-retrieve-synchronously, they must be
+downloaded in order of size (ascending), so if you customize
+this, keep that in mind."
+  :type 'list
   :group 'swank-clojure)
 
 (defface swank-clojure-dim-trace-face
@@ -138,38 +156,44 @@ For example -Xmx512m or -Dsun.java2d.noddraw=true"
 will be used over paths too.)"
   (mapconcat 'identity (mapcar 'expand-file-name paths) path-separator))
 
+(defun swank-clojure-parse-jar-name (url)
+  (car (last (split-string url "/"))))
+
 (defun swank-clojure-download-jar (url)
-  (let ((jar-name (car (last (split-string url "/"))))
-        (download-buffer (url-retrieve-synchronously url)))
-    (save-excursion
-      (condition-case e
-          (progn
-            (set-buffer download-buffer)
-            (re-search-forward "HTTP/[0-9]\.[0-9] 200 OK")
-            (re-search-forward "^$" nil 'move)
-            (delete-region (point-min) (+ 1 (point)))
-            (write-file (concat swank-clojure-jar-home "/" jar-name))
-            (kill-buffer))    
-        (error
-         ;; no recursive directory deletion on emacs 22 =(
-         (dolist (j (directory-files swank-clojure-jar-home t))
-           (delete-file j))
-         (delete-directory swank-clojure-jar-home)
-         (error "Failed to download Clojure jars."))))))
+  (let ((jar-name (swank-clojure-parse-jar-name url)))
+    (message "Downloading %s..." jar-name)
+    (let ((download-buffer (url-retrieve-synchronously url)))
+      (save-excursion
+        (condition-case e
+            (progn
+              (set-buffer download-buffer)
+              (re-search-forward "HTTP/[0-9]\.[0-9] 200 OK")
+              (re-search-forward "^$" nil 'move)
+              (delete-region (point-min) (+ 1 (point)))
+              (write-file (concat swank-clojure-jar-home "/" jar-name))
+              (kill-buffer nil))    
+          (error
+           ;; no recursive directory deletion on emacs 22 =(
+           (dolist (j (directory-files swank-clojure-jar-home t "[^.]+$"))
+             (delete-file j))
+           (delete-directory swank-clojure-jar-home)
+           (error "Failed to download Clojure jars.")))))))
+
+(defun swank-clojure-dep-exists-p (jar-url)
+  "True if the jar file in `jar-url' exists in `swank-clojure-jar-home'."
+  (file-exists-p (expand-file-name (swank-clojure-parse-jar-name jar-url)
+                                   swank-clojure-jar-home)))
 
 (defun swank-clojure-check-install ()
   "Prompt to install Clojure if it's not already present."
   (when (and (not swank-clojure-classpath)
-             (not (file-exists-p swank-clojure-jar-home))
+             (or (not (file-exists-p swank-clojure-jar-home))
+                 (> (count-if-not 'swank-clojure-dep-exists-p swank-clojure-deps)
+                    0))
              (y-or-n-p "It looks like Clojure is not installed. Install now? "))
     (make-directory swank-clojure-jar-home t)
-    ;; bug in url-retrieve-synchronously: must download in order of size
-    (swank-clojure-download-jar (concat "http://repo.technomancy.us/"
-                                        "swank-clojure-1.0.jar"))
-    (swank-clojure-download-jar (concat "http://repo1.maven.org/maven2/org/"
-                                        "clojure/clojure/1.0.0/clojure-1.0.0.jar"))
-    (swank-clojure-download-jar (concat "http://repo.technomancy.us/"
-                                        "clojure-contrib-1.0-compat.jar"))
+    (dolist (j swank-clojure-deps)
+      (swank-clojure-download-jar j))
     (setq swank-clojure-classpath (swank-clojure-default-classpath))))
 
 ;;;###autoload
