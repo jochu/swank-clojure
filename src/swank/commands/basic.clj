@@ -353,7 +353,9 @@ that symbols accessible in the current namespace go first."
 
 (defslimefn create-repl [target] '("user" "user"))
 
-;;; Thread
+;;; Threads
+
+(def #^{:private true} thread-list (atom []))
 
 (defn- get-root-group [#^java.lang.ThreadGroup tg]
   (if-let [parent (.getParent tg)]
@@ -374,6 +376,17 @@ that symbols accessible in the current namespace go first."
 LABELS is a list of attribute names and the remaining lists are the
 corresponding attribute values per thread."
   []
-  (let [threads (get-thread-list)
-        labels '(id name priority state)]
-    (cons labels (map extract-info threads))))
+  (reset! thread-list (get-thread-list))
+  (let [labels '(id name priority state)]
+    (cons labels (map extract-info @thread-list))))
+
+;;; TODO: Find a better way, as Thread.stop is deprecated
+(defslimefn kill-nth-thread [index]
+  (when index
+   (when-let [thread (nth @thread-list index nil)]
+     (println "Thread: " thread)
+     (.stop thread))))
+
+(defslimefn quit-thread-browser []
+  (reset! thread-list []))
+
