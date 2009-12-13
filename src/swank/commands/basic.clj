@@ -352,3 +352,28 @@ that symbols accessible in the current namespace go first."
      (nth (.getStackTrace *current-exception*) n)))
 
 (defslimefn create-repl [target] '("user" "user"))
+
+;;; Thread
+
+(defn- get-root-group [#^java.lang.ThreadGroup tg]
+  (if-let [parent (.getParent tg)]
+    (recur parent)
+    tg))
+
+(defn- get-thread-list []
+  (let [rg (get-root-group (.getThreadGroup (Thread/currentThread)))
+        arr (make-array Thread (.activeCount rg))]
+    (.enumerate rg arr true)
+    (seq arr)))
+
+(defn- extract-info [#^Thread t]
+  (map str [(.getId t) (.getName t) (.getPriority t) (.getState t)]))
+
+(defslimefn list-threads
+  "Return a list (LABELS (ID NAME STATUS ATTRS ...) ...).
+LABELS is a list of attribute names and the remaining lists are the
+corresponding attribute values per thread."
+  []
+  (let [threads (get-thread-list)
+        labels '(id name priority state)]
+    (cons labels (map extract-info threads))))
