@@ -22,7 +22,8 @@
     :file  Path of the class file, relative to :loc"
   (:import [java.io File FilenameFilter]
            [java.util StringTokenizer]
-           [java.util.jar JarFile JarEntry]))
+           [java.util.jar JarFile JarEntry]
+           [java.util.regex Pattern]))
 
 ;;; Class file naming, categorization
 
@@ -88,7 +89,8 @@
   ;; location. Make sure it decends; a class can't be on classpath directly.
   [#^File f #^File loc]
   (let [fp (.getPath f), lp (.getPath loc)
-        m (re-matcher (re-pattern (str "^" lp File/separator)) fp)]
+        m (re-matcher (re-pattern (Pattern/quote
+                                   (str "^" lp File/separator))) fp)]
     (if (not (.find m))                 ; must be descendent of loc
       []
       (let [fpr (.substring fp (.end m))]
