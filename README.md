@@ -146,7 +146,7 @@ Swank-clojure is really two pieces: a server written in Clojure and a
 launcher written in Elisp. The elisp parts are installed with:
 
     $ git clone git://github.com/technomancy/slime.git
-    $ git clone git://github.com/technomancy/clojure-mode.el
+    $ git clone git://github.com/technomancy/clojure-mode.git
 
 Open slime/slime.el, slime/contrib/slime-repl.el,
 clojure-mode/clojure-mode.el, and swank-clojure.el and hit
