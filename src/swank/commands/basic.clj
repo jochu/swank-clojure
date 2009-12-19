@@ -273,8 +273,15 @@ that symbols accessible in the current namespace go first."
 ;;;; meta dot find
 
 (defn- slime-zip-resource [#^java.net.URL resource]
-  (let [jar-connection #^java.net.JarURLConnection (.openConnection resource)]
-    (list :zip (.getFile (.getJarFileURL jar-connection)) (.getEntryName jar-connection))))
+  (let [jar-connection #^java.net.JarURLConnection (.openConnection resource)
+        ;; All kinds of hacking to decode jar file URI encoding and remove
+        ;; an opening slash from /c:/program%20files/...
+        jar-file (.getPath (.toURI (.getJarFileURL jar-connection)))
+        zip (if (and (.startsWith (System/getProperty "os.name") "Windows")
+                     (re-seq #"^/[a-zA-Z]:/" jar-file))
+              (apply str (rest jar-file))
+              jar-file)]
+    (list :zip zip (.getEntryName jar-connection))))
 
 (defn- slime-file-resource [#^java.net.URL resource]
   (list :file (.getFile resource)))
