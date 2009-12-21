@@ -1,7 +1,7 @@
 (ns swank.util.io
   (:use [swank util]
         [swank.util.concurrent thread])
-  (:import [java.io StringWriter Reader]))
+  (:import [java.io StringWriter Reader PrintWriter]))
 
 (defn read-chars
   ([rdr n] (read-chars rdr n false))
@@ -19,15 +19,16 @@
   "Creates a stream that will call a given function when flushed."
   ([flushf]
      (let [closed? (atom false)
-           #^StringWriter stream
-           (proxy [StringWriter] []
-             (close [] (reset! closed? true))
-             (flush []
-                    (let [#^StringWriter me this
-                          len (.. me getBuffer length)]
-                      (when (> len 0)
-                        (flushf (.. me getBuffer (substring 0 len)))
-                        (.. me getBuffer (delete 0 len))))))]
+           #^PrintWriter stream
+           (PrintWriter.
+            (proxy [StringWriter] []
+              (close [] (reset! closed? true))
+              (flush []
+                     (let [#^StringWriter me this
+                           len (.. me getBuffer length)]
+                       (when (> len 0)
+                         (flushf (.. me getBuffer (substring 0 len)))
+                         (.. me getBuffer (delete 0 len)))))))]
        (dothread
         (thread-set-name "Call-on-write Stream")
         (continuously
@@ -35,4 +36,4 @@
          (when-not @closed?
            (.flush stream))))
        stream))
-  {:tag StringWriter})
+  {:tag PrintWriter})
