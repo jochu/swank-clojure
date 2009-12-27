@@ -2,9 +2,9 @@
 
 [Swank-clojure](http://github.com/technomancy/swank-clojure) is an
 adapter that lets you use SLIME (the Superior Lisp Interaction Mode
-for Emacs) with Clojure. It's designed to work with GNU Emacs 22 and
-higher. It may work with forks like XEmacs or Aquamacs, but those are
-unsupported.
+for Emacs) with Clojure. It's designed to work with GNU Emacs 23 and
+higher. It may work with forks like XEmacs/Aquamacs or earlier
+versions of Emacs, but those are not as well supported.
 
 ## Usage
 
@@ -42,6 +42,11 @@ swank-clojure-project.
 ## Installation
 
 Install [from ELPA](http://tromey.com/elpa) using package.el[1].
+
+When you perform the installation, you will see warnings related to
+the byte-compilation of the packages. This is normal; the packages
+will work just fine even if there are problems compiling it upon
+installation.
 
 If you're only going to use #4 above, you'll only need the
 "slime-repl" package. Otherwise get the "swank-clojure" package.
@@ -102,6 +107,15 @@ Commonly-used commands:
 * **C-c C-d C-d**: Look up documentation for a var
 * **C-c C-z**: Switch to the repl buffer
 * **C-c M-p**: Switch the repl namespace to match the current buffer
+
+Pressing "v" on a stack trace a debug buffer will jump to the file and
+line referenced by that frame if possible.
+
+Note that Slime was designed to work with Common Lisp, which has a
+distinction between interpreted code and compiled code. Clojure has no
+such distinction, but many of the Slime commands retain parallel
+load/compile commands that have the same effect in the context of
+Clojure.
 
 ## Keeping Common Lisp
 
