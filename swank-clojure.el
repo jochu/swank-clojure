@@ -287,6 +287,13 @@ The `path' variable is bound to the project root when these functions run.")
        (@(ns-resolve 'clojure.contrib.repl-utils 'javadoc) " classname ")
        (catch Throwable t (.getMessage t)))"))))
 
+(defun directoryp (path)
+  "Return t is path is a directory or a symlink pointing to a directory."
+  (let ((first-attr (car (file-attributes path))))
+    (if (stringp first-attr)
+      (directoryp first-attr)
+      first-attr)))
+
 ;;;###autoload
 (defun swank-clojure-project (path)
   "Setup classpath for a clojure project and starts a new SLIME session.
@@ -305,7 +312,10 @@ The `path' variable is bound to the project root when these functions run.")
         (swank-clojure-binary nil)
         (swank-clojure-classpath (let ((l (expand-file-name "lib" path)))
                                    (if (file-directory-p l)
-                                       (directory-files l t ".jar$")))))
+				       (append
+					(directory-files l t ".jar$")
+					(remove-if-not 'directoryp
+					  (directory-files l t "^[^\\.]")))))))
 
     (add-to-list 'swank-clojure-classpath (expand-file-name "classes/" path))
     (add-to-list 'swank-clojure-classpath (expand-file-name "src/" path))
