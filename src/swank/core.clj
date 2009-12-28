@@ -120,9 +120,6 @@
     (doall coll)
     coll))
 
-(defn compiler-exception? [ex]
-  (= (class ex) clojure.lang.Compiler$CompilerException))
-
 (defn eval-for-emacs [form buffer-package id]
   (try
    (binding [*current-package* buffer-package]
@@ -149,7 +146,7 @@
 
      ;; start sldb, don't bother here because you can't actually
      ;; recover with java
-     (invoke-debugger (if (or (compiler-exception? t) *debug-swank-clojure*)
+     (invoke-debugger (if *debug-swank-clojure*
                         t
                         (.getCause t))
                       id)
