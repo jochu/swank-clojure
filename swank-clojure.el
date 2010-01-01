@@ -6,7 +6,7 @@
 ;;          Phil Hagelberg <technomancy@gmail.com>
 ;;
 ;; URL: http://github.com/technomancy/swank-clojure
-;; Version: 1.0
+;; Version: 1.1.0
 ;; Keywords: languages, lisp
 ;; Package-Requires: ((slime-repl "20091016") (clojure-mode "1.6"))
 ;;
@@ -110,11 +110,13 @@ For example -Xmx512m or -Dsun.java2d.noddraw=true"
 
 (defcustom swank-clojure-deps
   (list (concat "http://repo.technomancy.us/"
-                "swank-clojure-1.0.jar")
-        (concat "http://repo1.maven.org/maven2/org/"
-                "clojure/clojure/1.0.0/clojure-1.0.0.jar")
-        (concat "http://repo.technomancy.us/"
-                "clojure-contrib-1.0-compat.jar"))
+                "swank-clojure-1.1.0.jar")
+        (concat "http://build.clojure.org/snapshots/org/"
+                "clojure/clojure/1.1.0-master-SNAPSHOT/"
+                "clojure-1.1.0-master-20091202.150145-1.jar")
+        (concat "http://build.clojure.org/snapshots/org/"
+                "clojure/clojure-contrib/1.1.0-master-SNAPSHOT/"
+                "clojure-contrib-1.1.0-master-20091212.205045-1.jar"))
   "A list of urls of jars required to run swank-clojure. If they
 don't exist in `swank-clojure-jar-home' and
 `swank-clojure-classpath' is not set, the user will be prompted

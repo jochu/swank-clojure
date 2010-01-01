@@ -1,5 +1,5 @@
-(defproject swank-clojure "1.1.0-SNAPSHOT"
-  :description "SWANK server connecting Clojure to Emacs SLIME"
+(defproject swank-clojure "1.1.0"
+  :description "Swank server connecting Clojure to Emacs SLIME"
   :url "http://github.com/technomancy/swank-clojure"
   :main swank.swank
-  :dependencies [[org.clojure/clojure "1.1.0-alpha-SNAPSHOT"]])
+  :dependencies [[org.clojure/clojure "1.1.0-master-SNAPSHOT"]])
