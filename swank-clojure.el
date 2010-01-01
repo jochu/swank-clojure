@@ -272,15 +272,14 @@ will be used over paths too.)"
 (defun swank-clojure-dim-font-lock ()
   "Dim irrelevant lines in Clojure debugger buffers."
   (if (string-match "clojure" (buffer-name))
-      (font-lock-add-keywords nil
-                              '(("[0-9]+: \\(clojure\.\\(core\\|lang\\).*\\)"
-                                 1 swank-clojure-dim-trace-face)
-                                ("[0-9]+: \\(java.*\\)"
-                                 1 swank-clojure-dim-trace-face)
-                                ("[0-9]+: \\(swank.*\\)"
-                                 1 swank-clojure-dim-trace-face)
-                                ("\\[\\([A-Z]+\\)\\]"
-                                 1 font-lock-function-name-face)))))
+      (font-lock-add-keywords
+       nil `((,(concat " [0-9]+: " (regexp-opt '("clojure.core"
+                                                 "clojure.lang"
+                                                 "swank." "java."))
+                       ;; TODO: regexes ending in .* are ignored by
+                       ;; font-lock; what gives?
+                       "[a-zA-Z0-9\\._$]*")
+              . font-lock-comment-face)) t)))
 
 (add-hook 'sldb-mode-hook 'swank-clojure-dim-font-lock)
 
