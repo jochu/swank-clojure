@@ -12,7 +12,7 @@ Depending on what you're using it for, Swank Clojure can be invoked in
 a few different ways:
         
 1. Standalone Session: If you just hit M-x slime, swank-clojure will
-   download the jars for Clojure 1.0, contrib, and swank-clojure,
+   download the jars for Clojure, contrib, and swank-clojure,
    launch an instance, and connect to it. If you just want to try out
    Clojure, this is all you need. Just get Swank Clojure through
    [ELPA](http://tromey.com/elpa) and stop reading here. =)
@@ -23,13 +23,13 @@ a few different ways:
 
 3. Project: Put your project's dependencies in the lib/ directory,
    (either manually or using
-   [leiningen](http://github.com/technomancy/leiningen) or Maven) then
+   [Leiningen](http://github.com/technomancy/leiningen) or Maven) then
    launch M-x swank-clojure-project. Note that you must have
    swank-clojure.jar in the lib/ directory, it will not automatically
    add itself to the classpath as it did in past versions that had to
    run from a checkout.
 
-4. Standalone Server: Users of leiningen or clojure-maven-plugin can
+4. Standalone Server: Users of Leiningen or clojure-maven-plugin can
    [launch a server from a
    shell](http://wiki.github.com/technomancy/leiningen/emacs-integration)
    and connect to it from within Emacs using M-x slime-connect.
@@ -56,6 +56,9 @@ recommended. ELPA will be included in the next version of Emacs and
 has been a standard piece of the Emacs ecosystem for a while
 now. See the "Installing from Source" section below if you wish to
 hack on a development version that hasn't been released yet.
+
+Be sure you don't have old versions of SLIME either manually installed
+or installed using a system-wide package manager like apt-get.
 
 ## Project Layout
 
@@ -92,11 +95,12 @@ own code, and connect via Emacs to that instance:
 Then use M-x slime-connect to connect from within Emacs.
 
 You can also start the server directly from the "java" command-line
-launcher if you use "swank.swank" as your main class.
+launcher if you AOT-compile it and specify "swank.swank" as your main
+class.
 
 ## Commands
 
-Commonly-used commands:
+Commonly-used SLIME commands:
 
 * **M-TAB**: Autocomplete symbol at point
 * **C-x C-e**: Eval the form under the point
@@ -105,7 +109,7 @@ Commonly-used commands:
 * **C-c S-i**: Inspect a value
 * **C-c C-m**: Macroexpand the call under the point
 * **C-c C-d C-d**: Look up documentation for a var
-* **C-c C-z**: Switch to the repl buffer
+* **C-c C-z**: Switch from a Clojure buffer to the repl buffer
 * **C-c M-p**: Switch the repl namespace to match the current buffer
 
 Pressing "v" on a stack trace a debug buffer will jump to the file and
