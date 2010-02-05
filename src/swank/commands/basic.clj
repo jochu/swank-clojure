@@ -65,6 +65,10 @@
               (var-set retval (pr-str (first (eval-region string)))))
             (var-get retval)))))
 
+(defslimefn pprint-eval [string]
+  (with-emacs-package
+    (pretty-pr-code (first (eval-region string)))))
+
 ;;;; Macro expansion
 
 (defn- apply-macro-expander [expander string]
