@@ -16,6 +16,8 @@
   (:require [swank.commands]
             [swank.commands basic indent completion
              contrib inspector])
+  (:import [java.lang System]
+           [java.io File])
   (:gen-class))
 
 (defn ignore-protocol-version [version]
@@ -65,7 +67,9 @@
                      (if @stop rexit
                          (do (swap! stop (fn [_] true))
                              `(do (ignore-protocol-version nil)
-                                  (start-server "/tmp/slime-port.txt"
+                                  (start-server (let [dir (System/getProperty "java.io.tmpdir")
+                                                      file (File. dir "slime-port.txt")]
+                                                  (.getCanonicalPath file))
                                                 ~@(apply concat opts))))))
              :need-prompt #(identity false))))
   ([] (start-repl 4005)))
