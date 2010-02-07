@@ -328,7 +328,7 @@ The `path' variable is bound to the project root when these functions run.")
   (let ((slime-lisp-implementations (copy-list slime-lisp-implementations))
         (swank-clojure-extra-vm-args (copy-list swank-clojure-extra-vm-args))
         (swank-clojure-binary nil)
-        (swank-clojure-classpath (let ((l (expand-file-name "lib" path)))
+        (swank-clojure-classpath (let ((l (expand-file-name swank-clojure-project-dep-path path)))
                                    (if (file-directory-p l)
 				       (append
 					(directory-files l t ".jar$")
