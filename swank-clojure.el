@@ -29,12 +29,12 @@
 ;;    swank-clojure-classpath to a list of paths to the jars you want to
 ;;    use and then hit M-x slime.
 ;;
-;; 3. Project: Put your project's dependencies in the lib/ directory,
-;;    (either manually or using Leiningen or Maven) then launch
-;;    M-x swank-clojure-project. Note that you must have
-;;    swank-clojure.jar in the lib/ directory, it will not
-;;    automatically add itself to the classpath as it did in past
-;;    versions that had to run from a checkout.
+;; 3. Project: Put your project's dependencies (either manually or using
+;;    Leiningen or Maven) in the directory named by
+;;    `swank-clojure-project-dep-path' (lib/ by default), then launch M-x
+;;    swank-clojure-project. Note that the directory must contain
+;;    swank-clojure.jar, it will not automatically be added to the
+;;    classpath as it was in past versions that had to run from a checkout.
 ;;
 ;; 4. Standalone Server: Users of leiningen or clojure-maven-plugin
 ;;    can launch a server from a shell
