@@ -108,6 +108,12 @@ For example -Xmx512m or -Dsun.java2d.noddraw=true"
   :type 'boolean
   :group 'swank-clojure)
 
+(defcustom swank-clojure-project-dep-path "lib"
+  "The directory (relative to the project root) to look for dependencies in
+when using `swank-clojure-project'."
+  :type 'string
+  :group 'swank-clojure)
+
 (defcustom swank-clojure-deps
   (list (concat "http://repo.technomancy.us/"
                 "swank-clojure-1.1.0.jar")
