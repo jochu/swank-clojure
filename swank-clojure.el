@@ -356,7 +356,7 @@ The `path' variable is bound to the project root when these functions run.")
     (run-hooks 'swank-clojure-project-hook)
 
     (save-window-excursion
-      (slime))))
+      (slime 'clojure))))
 
 (provide 'swank-clojure)
 ;;; swank-clojure.el ends here
