@@ -57,15 +57,16 @@
 
 (defn start-repl
   "Start the server wrapped in a repl. Use this to embed swank in your code."
-  ([port]
-     (let [stop (atom false)]
+  ([port & opts]
+     (let [stop (atom false)
+	   opts (merge {:port port :encoding "iso-latin-1-unix"}
+		       (apply hash-map opts))]
        (repl :read (fn [rprompt rexit]
                      (if @stop rexit
                          (do (swap! stop (fn [_] true))
                              `(do (ignore-protocol-version nil)
                                   (start-server "/tmp/slime-port.txt"
-                                                :encoding "iso-latin-1-unix"
-                                                :port ~port)))))
+                                                ~@(apply concat opts))))))
              :need-prompt #(identity false))))
   ([] (start-repl 4005)))
 
