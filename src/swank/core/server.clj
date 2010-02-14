@@ -57,7 +57,7 @@
 
 (defn- socket-serve [connection-serve socket opts]
   (with-connection (accept-authenticated-connection socket opts)
-    (let [out-redir (make-output-redirection *current-connection*)]
+    (let [out-redir (java.io.PrintWriter. (make-output-redirection *current-connection*))]
       (binding [*out* out-redir
                 *err* out-redir]
         (dosync (ref-set (*current-connection* :writer-redir) *out*))
