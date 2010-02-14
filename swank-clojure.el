@@ -259,14 +259,7 @@ will be used over paths too.)"
 (defun swank-clojure-slime-repl-modify-syntax ()
   (when (string-match "\\*slime-repl clojure\\*" (buffer-name))
     ;; modify syntax
-    (modify-syntax-entry ?~ "'   ")
-    (modify-syntax-entry ?, "    ")
-    (modify-syntax-entry ?\{ "(}")
-    (modify-syntax-entry ?\} "){")
-    (modify-syntax-entry ?\[ "(]")
-    (modify-syntax-entry ?\] ")[")
-    (modify-syntax-entry ?^ "'")
-    (modify-syntax-entry ?= "'")
+    (set-syntax-table clojure-mode-syntax-table) 
 
     ;; set indentation function (already local)
     (setq lisp-indent-function 'clojure-indent-function)
