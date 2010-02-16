@@ -349,6 +349,7 @@ The `path' variable is bound to the project root when these functions run.")
       (add-to-list 'swank-clojure-extra-vm-args
                    (format "-Dclojure.compile.path=%s"
                            (expand-file-name "target/classes/" path))))
+    (swank-clojure-reset-implementation)
     (run-hooks 'swank-clojure-project-hook)
 
     (save-window-excursion
