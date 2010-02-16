@@ -149,7 +149,8 @@ this, keep that in mind."
    ;; where the REPL doesn't pop up until the user presses Enter.
    "(do (.. java.net.InetAddress getLocalHost getHostAddress) nil)"
    (format "(swank.swank/start-server %S :encoding %S)\n\n"
-           file (format "%s" (slime-coding-system-cl-name encoding)))))
+           (expand-file-name file)
+           (format "%s" (slime-coding-system-cl-name encoding)))))
 
 (defun swank-clojure-find-package ()
   (let ((regexp "^(\\(clojure.core/\\)?\\(in-\\)?ns\\s-+[:']?\\([^()\" \t\n]+\\>\\)"))
