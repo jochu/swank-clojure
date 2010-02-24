@@ -58,7 +58,9 @@ now. See the "Installing from Source" section below if you wish to
 hack on a development version that hasn't been released yet.
 
 Be sure you don't have old versions of SLIME either manually installed
-or installed using a system-wide package manager like apt-get.
+or installed using a system-wide package manager like apt-get. If you
+do have any manual configuration of SLIME, be sure to place it after
+package.el is initialized.
 
 ## Project Layout
 
@@ -161,6 +163,11 @@ you should be able to use M-x slime.
 The Clojure-side server is managed with
 [Leiningen](http://github.com/technomancy/leiningen). Use the "lein
 install" task to place it in your local repository.
+
+Note that using Slime from CVS trunk is not recommended; changes have
+been introduced which are incompatible with the current implementation
+of the Clojure server. Using the versions in git from above will
+ensure that you have a compatible version.
 
 ## License
 
