@@ -276,19 +276,20 @@ that symbols accessible in the current namespace go first."
 
 ;;;; meta dot find
 
+(defn- clean-windows-path [#^String path]
+  ;; Decode file URI encoding and remove an opening slash from
+  ;; /c:/program%20files/... in jar file URLs and file resources.
+  (or (and (.startsWith (System/getProperty "os.name") "Windows")
+           (second (re-matches #"^/([a-zA-Z]:/.*)$" path)))
+      path))
+
 (defn- slime-zip-resource [#^java.net.URL resource]
   (let [jar-connection #^java.net.JarURLConnection (.openConnection resource)
-        ;; All kinds of hacking to decode jar file URI encoding and remove
-        ;; an opening slash from /c:/program%20files/...
-        jar-file (.getPath (.toURI (.getJarFileURL jar-connection)))
-        zip (if (and (.startsWith (System/getProperty "os.name") "Windows")
-                     (re-seq #"^/[a-zA-Z]:/" jar-file))
-              (apply str (rest jar-file))
-              jar-file)]
-    (list :zip zip (.getEntryName jar-connection))))
+        jar-file (.getPath (.toURI (.getJarFileURL jar-connection)))]
+    (list :zip (clean-windows-path jar-file) (.getEntryName jar-connection))))
 
 (defn- slime-file-resource [#^java.net.URL resource]
-  (list :file (.getFile resource)))
+  (list :file (clean-windows-path (.getFile resource))))
 
 (defn- slime-find-resource [#^String file]
   (let [resource (.getResource (clojure.lang.RT/baseLoader) file)]
