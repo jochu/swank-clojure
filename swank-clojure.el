@@ -339,6 +339,7 @@ The `path' variable is bound to the project root when these functions run.")
     (add-to-list 'swank-clojure-classpath (expand-file-name "classes/" path))
     (add-to-list 'swank-clojure-classpath (expand-file-name "src/" path))
     (add-to-list 'swank-clojure-classpath (expand-file-name "test/" path))
+    (add-to-list 'swank-clojure-classpath (expand-file-name "resources/" path))
 
     ;; For Maven style project layouts
     (when (file-exists-p (expand-file-name "pom.xml" path))
