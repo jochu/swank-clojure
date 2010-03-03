@@ -41,13 +41,13 @@
    namespace"
   ([] (potential-dot *ns*))
   ([ns]
-     (map #(str "." %) (set (map method-name (mapcat instance-methods (vals (ns-imports ns))))))))
+     (map #(str "." %) (set (map member-name (mapcat instance-methods (vals (ns-imports ns))))))))
 
 (defn potential-static
   "Returns a list of potential static members for a given namespace"
   ([#^Class class]
-     (concat (map method-name (static-methods class))
-	     (map field-name (static-fields class)))))
+     (concat (map member-name (static-methods class))
+	     (map member-name (static-fields class)))))
      
 
 (defn potiential-classes-on-path
