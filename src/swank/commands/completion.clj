@@ -44,9 +44,11 @@
      (map #(str "." %) (set (map method-name (mapcat instance-methods (vals (ns-imports ns))))))))
 
 (defn potential-static
-  "Returns a list of potential static methods for a given namespace"
+  "Returns a list of potential static members for a given namespace"
   ([#^Class class]
-     (map method-name (static-methods class))))
+     (concat (map method-name (static-methods class))
+	     (map field-name (static-fields class)))))
+     
 
 (defn potiential-classes-on-path
   "Returns a list of Java class and Clojure package names found on the current
