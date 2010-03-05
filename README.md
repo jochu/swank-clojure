@@ -17,7 +17,8 @@ a few different ways:
    Clojure, this is all you need. Just get Swank Clojure through
    [ELPA](http://tromey.com/elpa) and stop reading here. =)
 
-2. Custom classpath: If you want to hack on Clojure or Contrib, set
+2. Custom classpath: If you want to hack on Clojure or Contrib or want
+   to provide your own copy of the jars for some other reason, set
    swank-clojure-classpath to a list of paths to the jars you want to
    use and then hit M-x slime.
 
@@ -68,7 +69,7 @@ If you intend to use M-x swank-clojure-project, it will prompt for a
 project dir and set up the classpath for that structure based on some
 existing Clojure conventions:
 
-* src/, classes/, and test/ - added to the classpath
+* src/, classes/, test/, and resources/ - added to the classpath
 * lib/ - all .jars in here are added to the classpath
 * src/main/clojure, src/test/, target/classes, 
   target/dependency - added if pom.xml exists (maven-style)
