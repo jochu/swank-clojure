@@ -343,7 +343,7 @@ that symbols accessible in the current namespace go first."
     (if (and *current-exception*
              (not (.contains (.getMessage *current-exception*) "BREAK:")))
       (let [cause (.getCause *current-exception*)]
-        (invoke-debugger cause *debug-thread-id*)
+        (invoke-debugger nil cause *pending-continuations*)
         (.getMessage cause))
       (throw *debug-continue-exception*))
     (throw *debug-quit-exception*)))
