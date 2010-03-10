@@ -353,15 +353,12 @@ that symbols accessible in the current namespace go first."
 
 (defslimefn buffer-first-change [file-name] nil)
 
-(defn local-non-functions [m]
-  (select-keys m  (filter #(or (coll? (m %)) (not (ifn? (m %)))) (keys m))))
-
 (defn locals-for-emacs [m]
   (map #(list :name (name (first %)) :id 0 :value (str (second %))) m))
 
 (defslimefn frame-catch-tags-for-emacs [n] nil)
 (defslimefn frame-locals-for-emacs [n]
-  (if (and (zero? 0) *current-env*)
+  (if (and (zero? n) *current-env*)
       (locals-for-emacs (local-non-functions *current-env*))))
 
 (defslimefn frame-locals-and-catch-tags [n]

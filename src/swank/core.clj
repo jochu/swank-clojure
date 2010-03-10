@@ -104,6 +104,9 @@
       (let [symbols (keys &env)]
         (zipmap (map (fn [sym] `(quote ~sym)) symbols) symbols)))))
 
+(defn local-non-functions [m]
+  (select-keys m  (filter #(or (coll? (m %)) (not (ifn? (m %)))) (keys m))))
+
 (defn exception-stacktrace [t]
   (map #(list %1 %2 '(:restartable nil))
        (iterate inc 0)
