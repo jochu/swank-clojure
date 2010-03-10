@@ -55,6 +55,20 @@
 
 (def #^Throwable *current-exception* nil)
 
+;; Local environment
+(def *current-env* nil)
+
+(let [&env :unavailable]
+  (defmacro local-bindings
+    "Produces a map of the names of local bindings to their values."
+    []
+    (if-not (= &env :unavailable)
+      (let [symbols (keys &env)]
+        (zipmap (map (fn [sym] `(quote ~sym)) symbols) symbols)))))
+
+(defn local-non-functions [m]
+  (select-keys m  (filter #(or (coll? (m %)) (not (ifn? (m %)))) (keys m))))
+
 ;; Handle Evaluation
 (defn send-to-emacs
     "Sends a message (msg) to emacs."
@@ -63,6 +77,16 @@
 
 (defn send-repl-results-to-emacs [val]
   (send-to-emacs `(:write-string ~(str (pr-str val) "\n") :repl-result)))
+
+(defn with-env-locals
+  "Evals a form with given locals. The locals should be a map of symbols to
+values."
+  [form]
+  (let [m (local-non-functions *current-env*)]
+    (if (first m)
+      `(let ~(vec (mapcat #(list % (m %)) (keys m)))
+         ~form)
+      form)))
 
 (defn eval-in-emacs-package [form]
   (with-emacs-package
@@ -93,19 +117,6 @@
 
 (defn- debug-abort-exception? [t]
   (some #(identical? *debug-abort-exception* %) (exception-causes t)))
-
-(def *current-env* nil)
-
-(let [&env :unavailable]
-  (defmacro local-bindings
-    "Produces a map of the names of local bindings to their values."
-    []
-    (if-not (= &env :unavailable)
-      (let [symbols (keys &env)]
-        (zipmap (map (fn [sym] `(quote ~sym)) symbols) symbols)))))
-
-(defn local-non-functions [m]
-  (select-keys m  (filter #(or (coll? (m %)) (not (ifn? (m %)))) (keys m))))
 
 (defn exception-stacktrace [t]
   (map #(list %1 %2 '(:restartable nil))

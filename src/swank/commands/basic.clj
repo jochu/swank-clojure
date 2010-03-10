@@ -37,7 +37,7 @@
            (if (= form rdr)
              [value last-form]
              (recur (read rdr false rdr)
-                    (eval form)
+                    (eval (with-env-locals form))
                     form)))))))
 
 (defslimefn interactive-eval-region [string]
