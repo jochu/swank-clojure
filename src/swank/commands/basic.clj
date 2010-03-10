@@ -340,18 +340,41 @@ that symbols accessible in the current namespace go first."
 
 (defslimefn invoke-nth-restart-for-emacs [level n]
   (if (= n 1)
-    (let [cause (.getCause *current-exception*)]
-      (invoke-debugger cause *debug-thread-id*)
-      (.getMessage cause))
+    (if (and *current-exception*
+             (not (.contains (.getMessage *current-exception*) "BREAK:")))
+      (let [cause (.getCause *current-exception*)]
+        (invoke-debugger cause *debug-thread-id*)
+        (.getMessage cause))
+      (throw *debug-continue-exception*))
     (throw *debug-quit-exception*)))
 
 (defslimefn backtrace [start end]
-  (doall (take (- end start) (drop start (exception-stacktrace *current-exception*)))))
+  (build-backtrace start end))
 
 (defslimefn buffer-first-change [file-name] nil)
 
+(defn local-non-functions [m]
+  (select-keys m  (filter #(or (coll? (m %)) (not (ifn? (m %)))) (keys m))))
+
+(defn locals-for-emacs [m]
+  (map #(list :name (name (first %)) :id 0 :value (str (second %))) m))
+
 (defslimefn frame-catch-tags-for-emacs [n] nil)
-(defslimefn frame-locals-for-emacs [n] nil)
+(defslimefn frame-locals-for-emacs [n]
+  (if (and (zero? 0) *current-env*)
+      (locals-for-emacs (local-non-functions *current-env*))))
+
+(defslimefn frame-locals-and-catch-tags [n]
+  (list (frame-locals-for-emacs n)
+        (frame-catch-tags-for-emacs n)))
+
+(defslimefn debugger-info-for-emacs [start end]
+  (build-debugger-info-for-emacs start end))
+
+(defslimefn eval-string-in-frame [expr n]
+  (if (and (zero? n) *current-env*)
+    (with-bindings *current-env*
+      (eval expr))))
 
 (defslimefn frame-source-location [n]
   (source-location-for-frame
