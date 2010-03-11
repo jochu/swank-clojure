@@ -339,14 +339,7 @@ that symbols accessible in the current namespace go first."
   (throw *debug-quit-exception*))
 
 (defslimefn invoke-nth-restart-for-emacs [level n]
-  (if (= n 1)
-    (if (and *current-exception*
-             (not (.contains (.getMessage *current-exception*) "BREAK:")))
-      (let [cause (.getCause *current-exception*)]
-        (invoke-debugger nil cause *pending-continuations*)
-        (.getMessage cause))
-      (throw *debug-continue-exception*))
-    (throw *debug-quit-exception*)))
+  ((nth (*sldb-restarts* (nth (keys *sldb-restarts*) n)) 2)))
 
 (defslimefn backtrace [start end]
   (build-backtrace start end))
