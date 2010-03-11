@@ -193,11 +193,11 @@ values."
    continue until a *debug-quit* exception is encountered."
   [level]
   (try
+   (send-to-emacs
+    (list* :debug (current-thread) level
+           (build-debugger-info-for-emacs 0 *sldb-initial-frames*)))
    ([] (continuously
         (do
-          (send-to-emacs
-           (list* :debug (current-thread) level
-                  (build-debugger-info-for-emacs 0 *sldb-initial-frames*)))
           (send-to-emacs `(:debug-activate ~(current-thread) ~level nil))
           (eval-from-control))))
    (catch Throwable t
