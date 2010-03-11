@@ -338,8 +338,24 @@ that symbols accessible in the current namespace go first."
 (defslimefn throw-to-toplevel []
   (throw *debug-quit-exception*))
 
+(defn invoke-restart [restart]
+  ((nth restart 2)))
+
 (defslimefn invoke-nth-restart-for-emacs [level n]
-  ((nth (*sldb-restarts* (nth (keys *sldb-restarts*) n)) 2)))
+  ((invoke-restart (*sldb-restarts* (nth (keys *sldb-restarts*) n)))))
+
+(defslimefn throw-to-toplevel []
+  (if-let [restart (*sldb-restarts* :quit)]
+    (invoke-restart restart)))
+
+(defslimefn sldb-continue []
+  (if-let [restart (*sldb-restarts* :continue)]
+    (invoke-restart restart)))
+
+(defslimefn sldb-abort []
+  (if-let [restart (*sldb-restarts* :abort)]
+    (invoke-restart restart)))
+
 
 (defslimefn backtrace [start end]
   (build-backtrace start end))
