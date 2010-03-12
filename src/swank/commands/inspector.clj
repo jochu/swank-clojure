@@ -268,7 +268,9 @@
   (if (and (zero? frame) *current-env*)
     (let [locals (local-non-functions *current-env*)
           object (locals (nth (keys locals) index))]
-      (inspect-object object))))
+      (with-emacs-package
+        (reset-inspector)
+        (inspect-object object)))))
 
 (defslimefn inspector-nth-part [index]
   (get @*inspectee-parts* index))
