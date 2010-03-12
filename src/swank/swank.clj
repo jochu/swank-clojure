@@ -67,10 +67,11 @@
                      (if @stop rexit
                          (do (swap! stop (fn [_] true))
                              `(do (ignore-protocol-version nil)
-                                  (start-server (let [dir (System/getProperty "java.io.tmpdir")
-                                                      file (File. dir "slime-port.txt")]
-                                                  (.getCanonicalPath file))
-                                                ~@(apply concat opts))))))
+                                  (start-server (-> "java.io.tmpdir"
+                                                    (System/getProperty)
+                                                    (File. "slime-port.txt")
+                                                    (.getCanonicalPath)))
+                                  ~@(apply concat opts)))))
              :need-prompt #(identity false))))
   ([] (start-repl 4005)))
 
