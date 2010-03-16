@@ -320,6 +320,8 @@ The `path' variable is bound to the project root when these functions run.")
                  (if (functionp 'locate-dominating-file) ; Emacs 23 only
                      (locate-dominating-file default-directory "src")
                    default-directory))))
+  (when (functionp 'locate-dominating-file)
+    (cd (locate-dominating-file default-directory "project.clj")))
   ;; TODO: allow multiple SLIME sessions per Emacs instance
   (when (get-buffer "*inferior-lisp*") (kill-buffer "*inferior-lisp*"))
 
