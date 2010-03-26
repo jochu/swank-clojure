@@ -14,7 +14,9 @@
 (defslimefn connection-info []
   `(:pid ~(sys/get-pid)
     :style :spawn
-    :lisp-implementation (:type "clojure" :name "clojure")
+    :lisp-implementation (:type "Clojure"
+                          :name "clojure"
+                          :version ~(clojure-version))
     :package (:name ~(name (ns-name *ns*))
               :prompt ~(name (ns-name *ns*)))
     :version ~(deref *protocol-version*)))
