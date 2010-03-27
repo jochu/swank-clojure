@@ -91,7 +91,7 @@
 
 ;;;; Compiler / Execution
 
-(def *compiler-exception-location-re* #"^clojure\\.lang\\.Compiler\\$CompilerException: ([^:]+):([^:]+):")
+(def *compiler-exception-location-re* #"Exception:.*\(([^:]+):([0-9]+)\)")
 (defn- guess-compiler-exception-location [#^Throwable t]
   (when (instance? clojure.lang.Compiler$CompilerException t)
     (let [[match file line] (re-find *compiler-exception-location-re* (.toString t))]
