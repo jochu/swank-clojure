@@ -61,15 +61,19 @@
   "Start the server wrapped in a repl. Use this to embed swank in your code."
   ([port & opts]
      (let [stop (atom false)
-	   opts (merge {:port port :encoding "iso-latin-1-unix"}
-		       (apply hash-map opts))]
+           opts (merge {:port port
+                        :encoding (or (System/getProperty
+                                       "swank.encoding")
+                                      "iso-latin-1-unix")}
+                       (apply hash-map opts))]
        (repl :read (fn [rprompt rexit]
                      (if @stop rexit
                          (do (swap! stop (fn [_] true))
                              `(do (ignore-protocol-version nil)
-                                  (start-server (let [dir (System/getProperty "java.io.tmpdir")
-                                                      file (File. dir "slime-port.txt")]
-                                                  (.getCanonicalPath file))
+                                  (start-server (-> "java.io.tmpdir"
+                                                    (System/getProperty)
+                                                    (File. "slime-port.txt")
+                                                    (.getCanonicalPath))
                                                 ~@(apply concat opts))))))
              :need-prompt #(identity false))))
   ([] (start-repl 4005)))
