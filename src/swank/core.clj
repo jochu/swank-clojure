@@ -265,17 +265,20 @@ values."
           (throw *debug-abort-exception*)))
 
       (debug-continue-exception? t)
-      (throw t)
+      (do
+        (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id))
+        (throw t))
 
       :else
       (do
         (set! *e t)
-        (sldb-debug
-         nil
-         (if *debug-swank-clojure* t (.getCause t))
-         id)
-        ;; reply with abort
-        (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id)))))))
+        (try
+         (sldb-debug
+          nil
+          (if *debug-swank-clojure* t (.getCause t))
+          id)
+         ;; reply with abort
+         (finally (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id)))))))))
 
 (defn- add-active-thread [thread]
   (dosync
