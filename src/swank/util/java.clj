@@ -1,13 +1,16 @@
 (ns swank.util.java)
 
-(defn method-name [#^java.lang.reflect.Method method]
-  (.getName method))
+(defn member-name [#^java.lang.reflect.Member member]
+  (.getName member))
 
-(defn method-static? [#^java.lang.reflect.Method method]
-  (java.lang.reflect.Modifier/isStatic (.getModifiers method)))
+(defn member-static? [#^java.lang.reflect.Member member]
+  (java.lang.reflect.Modifier/isStatic (.getModifiers member)))
 
 (defn static-methods [#^Class class]
-  (filter method-static? (.getMethods class)))
+  (filter member-static? (.getMethods class)))
+
+(defn static-fields [#^Class class]
+  (filter member-static? (.getDeclaredFields class)))
 
 (defn instance-methods [#^Class class]
-  (remove method-static? (.getMethods class)))
+  (remove member-static? (.getMethods class)))

@@ -264,6 +264,14 @@
         (binding [*current-connection* (first @*connections*)]
           (send-it))))))
 
+(defslimefn inspect-frame-var [frame index]
+  (if (and (zero? frame) *current-env*)
+    (let [locals (local-non-functions *current-env*)
+          object (locals (nth (keys locals) index))]
+      (with-emacs-package
+        (reset-inspector)
+        (inspect-object object)))))
+
 (defslimefn inspector-nth-part [index]
   (get @*inspectee-parts* index))
 
