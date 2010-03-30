@@ -257,7 +257,7 @@ that symbols accessible in the current namespace go first."
       :else nil))
    (catch Throwable t nil)))
 
-;;;; Completions
+;;;; Package Commands
 
 (defslimefn list-all-package-names
   ([] (map (comp str ns-name) (all-ns)))
@@ -268,6 +268,37 @@ that symbols accessible in the current namespace go first."
     (in-ns (ns-name ns))
     (list (str (ns-name ns))
           (str (ns-name ns)))))
+
+;;;; Tracing
+
+(defonce traced-fn-map {})
+
+(defn- trace-fn-call [sym f args]
+ (let [fname (symbol (str (.name (.ns sym)) "/" (.sym sym)))]
+   (println (str "Calling")
+            (apply str (take 240 (pr-str (when fname (cons fname args)) ))))
+   (let [result (apply f args)]
+     (println (str fname " returned " (apply str (take 240 (pr-str result)))))
+     result)))
+
+(defslimefn swank-toggle-trace [fname]
+ (when-let [sym (ns-resolve (maybe-ns *current-package*) (symbol fname))]
+   (if-let [f# (get traced-fn-map sym)]
+     (do
+       (alter-var-root #'traced-fn-map dissoc sym)
+       (alter-var-root sym (constantly f#))
+       (str " untraced."))
+     (let [f# @sym]
+       (alter-var-root #'traced-fn-map assoc sym f#)
+       (alter-var-root sym
+         (constantly
+           (fn [& args]
+             (trace-fn-call sym f# args))))
+       (str " traced.")))))
+
+(defslimefn untrace-all []
+ (doseq [sym (keys traced-fn-map)]
+   (swank-toggle-trace (.sym sym))))
 
 ;;;; Source Locations
 (comment
