@@ -159,7 +159,7 @@ this, keep that in mind."
            (format "%s" (slime-coding-system-cl-name encoding)))))
 
 (defun swank-clojure-find-package ()
-  (let ((regexp "^(\\(clojure.core/\\)?\\(in-\\)?ns[ \t\n\r]+\\(#\\^{[^}]+}[ \t\n\r]+\\)?[:']?\\([^()\" \t\n]+\\>\\)"))
+  (let ((regexp "^(\\(clojure.core/\\)?\\(in-\\)?ns\\+?[ \t\n\r]+\\(#\\^{[^}]+}[ \t\n\r]+\\)?[:']?\\([^()\" \t\n]+\\>\\)"))
     (save-excursion
       (when (or (re-search-backward regexp nil t)
                 (re-search-forward regexp nil t))
@@ -246,14 +246,18 @@ will be used over paths too.)"
         init-opts)
       (list "--repl")))))
 
+(defun swank-clojure-reset-implementation ()
+  "Redefines the clojure entry in `slime-lisp-implementations'."
+  (aput 'slime-lisp-implementations 'clojure
+        (list (swank-clojure-cmd) :init 'swank-clojure-init)))
+
 ;;;###autoload
 (defadvice slime-read-interactive-args (before add-clojure)
   ;; Unfortunately we need to construct our Clojure-launching command
   ;; at slime-launch time to reflect changes in the classpath. Slime
   ;; has no mechanism to support this, so we must resort to advice.
   (require 'assoc)
-  (aput 'slime-lisp-implementations 'clojure
-        (list (swank-clojure-cmd) :init 'swank-clojure-init)))
+  (swank-clojure-reset-implementation))
 
 ;; Change the repl to be more clojure friendly
 (defun swank-clojure-slime-repl-modify-syntax ()
@@ -316,6 +320,8 @@ The `path' variable is bound to the project root when these functions run.")
                  (if (functionp 'locate-dominating-file) ; Emacs 23 only
                      (locate-dominating-file default-directory "src")
                    default-directory))))
+  (when (functionp 'locate-dominating-file)
+    (cd (locate-dominating-file default-directory "project.clj")))
   ;; TODO: allow multiple SLIME sessions per Emacs instance
   (when (get-buffer "*inferior-lisp*") (kill-buffer "*inferior-lisp*"))
 
@@ -346,6 +352,7 @@ The `path' variable is bound to the project root when these functions run.")
       (add-to-list 'swank-clojure-extra-vm-args
                    (format "-Dclojure.compile.path=%s"
                            (expand-file-name "target/classes/" path))))
+    (swank-clojure-reset-implementation)
     (run-hooks 'swank-clojure-project-hook)
 
     (save-window-excursion

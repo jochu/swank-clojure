@@ -3,14 +3,14 @@
 (def
  #^{:private true}
  walk-enabled?
- (.getResource (clojure.lang.RT/baseLoader) "clojure/contrib/walk.clj"))
+ (.getResource (clojure.lang.RT/baseLoader) "clojure/contrib/macro_utils.clj"))
 
 (when walk-enabled?
-  (require 'clojure.contrib.walk))
+  (require 'clojure.contrib.macro-utils))
 
 (defmacro macroexpand-all* [form]
   (if walk-enabled?
-    `(clojure.contrib.walk/macroexpand-all ~form)
+    `(clojure.contrib.macro-utils/mexpand-all ~form)
     `(macroexpand ~form)))
 
 (defn macroexpand-all [form]

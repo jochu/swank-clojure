@@ -37,7 +37,7 @@
            (if (= form rdr)
              [value last-form]
              (recur (read rdr false rdr)
-                    (eval form)
+                    (eval (with-env-locals form))
                     form)))))))
 
 (defslimefn interactive-eval-region [string]
@@ -129,7 +129,7 @@
               )))))))
 
 (defslimefn compile-file-for-emacs
-  ([file-name load? compile-options]
+  ([file-name load? & compile-options]
      (when load?
        (compile-file-for-emacs* file-name))))
 
@@ -276,19 +276,20 @@ that symbols accessible in the current namespace go first."
 
 ;;;; meta dot find
 
+(defn- clean-windows-path [#^String path]
+  ;; Decode file URI encoding and remove an opening slash from
+  ;; /c:/program%20files/... in jar file URLs and file resources.
+  (or (and (.startsWith (System/getProperty "os.name") "Windows")
+           (second (re-matches #"^/([a-zA-Z]:/.*)$" path)))
+      path))
+
 (defn- slime-zip-resource [#^java.net.URL resource]
   (let [jar-connection #^java.net.JarURLConnection (.openConnection resource)
-        ;; All kinds of hacking to decode jar file URI encoding and remove
-        ;; an opening slash from /c:/program%20files/...
-        jar-file (.getPath (.toURI (.getJarFileURL jar-connection)))
-        zip (if (and (.startsWith (System/getProperty "os.name") "Windows")
-                     (re-seq #"^/[a-zA-Z]:/" jar-file))
-              (apply str (rest jar-file))
-              jar-file)]
-    (list :zip zip (.getEntryName jar-connection))))
+        jar-file (.getPath (.toURI (.getJarFileURL jar-connection)))]
+    (list :zip (clean-windows-path jar-file) (.getEntryName jar-connection))))
 
 (defn- slime-file-resource [#^java.net.URL resource]
-  (list :file (.getFile resource)))
+  (list :file (clean-windows-path (.getFile resource))))
 
 (defn- slime-find-resource [#^String file]
   (let [resource (.getResource (clojure.lang.RT/baseLoader) file)]
@@ -345,20 +346,49 @@ that symbols accessible in the current namespace go first."
 (defslimefn throw-to-toplevel []
   (throw *debug-quit-exception*))
 
+(defn invoke-restart [restart]
+  ((nth restart 2)))
+
 (defslimefn invoke-nth-restart-for-emacs [level n]
-  (if (= n 1)
-    (let [cause (.getCause *current-exception*)]
-      (invoke-debugger cause *debug-thread-id*)
-      (.getMessage cause))
-    (throw *debug-quit-exception*)))
+  ((invoke-restart (*sldb-restarts* (nth (keys *sldb-restarts*) n)))))
+
+(defslimefn throw-to-toplevel []
+  (if-let [restart (*sldb-restarts* :quit)]
+    (invoke-restart restart)))
+
+(defslimefn sldb-continue []
+  (if-let [restart (*sldb-restarts* :continue)]
+    (invoke-restart restart)))
+
+(defslimefn sldb-abort []
+  (if-let [restart (*sldb-restarts* :abort)]
+    (invoke-restart restart)))
+
 
 (defslimefn backtrace [start end]
-  (doall (take (- end start) (drop start (exception-stacktrace *current-exception*)))))
+  (build-backtrace start end))
 
 (defslimefn buffer-first-change [file-name] nil)
 
+(defn locals-for-emacs [m]
+  (map #(list :name (name (first %)) :id 0 :value (str (second %))) m))
+
 (defslimefn frame-catch-tags-for-emacs [n] nil)
-(defslimefn frame-locals-for-emacs [n] nil)
+(defslimefn frame-locals-for-emacs [n]
+  (if (and (zero? n) *current-env*)
+      (locals-for-emacs (local-non-functions *current-env*))))
+
+(defslimefn frame-locals-and-catch-tags [n]
+  (list (frame-locals-for-emacs n)
+        (frame-catch-tags-for-emacs n)))
+
+(defslimefn debugger-info-for-emacs [start end]
+  (build-debugger-info-for-emacs start end))
+
+(defslimefn eval-string-in-frame [expr n]
+  (if (and (zero? n) *current-env*)
+    (with-bindings *current-env*
+      (eval expr))))
 
 (defslimefn frame-source-location [n]
   (source-location-for-frame

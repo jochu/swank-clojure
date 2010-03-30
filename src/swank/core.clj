@@ -11,6 +11,14 @@
 ;; Emacs packages
 (def *current-package*)
 
+;; current emacs eval id
+(def *pending-continuations* '())
+
+(def *sldb-stepping-p* nil)
+(def *sldb-initial-frames* 10)
+(def #^{:doc "The current level of recursive debugging."} *sldb-level* 0)
+(def #^{:doc "The current restarts."} *sldb-restarts* 0)
+
 (def #^{:doc "Include swank-clojure thread in stack trace for debugger."}
      *debug-swank-clojure* false)
 
@@ -43,7 +51,24 @@
 
 ;; Exceptions for debugging
 (defonce *debug-quit-exception* (Exception. "Debug quit"))
-(def #^Throwable *current-exception*)
+(defonce *debug-continue-exception* (Exception. "Debug continue"))
+(defonce *debug-abort-exception* (Exception. "Debug abort"))
+
+(def #^Throwable *current-exception* nil)
+
+;; Local environment
+(def *current-env* nil)
+
+(let [&env :unavailable]
+  (defmacro local-bindings
+    "Produces a map of the names of local bindings to their values."
+    []
+    (if-not (= &env :unavailable)
+      (let [symbols (keys &env)]
+        (zipmap (map (fn [sym] `(quote ~sym)) symbols) symbols)))))
+
+(defn local-non-functions [m]
+  (select-keys m  (filter #(or (coll? (m %)) (not (ifn? (m %)))) (keys m))))
 
 ;; Handle Evaluation
 (defn send-to-emacs
@@ -53,6 +78,16 @@
 
 (defn send-repl-results-to-emacs [val]
   (send-to-emacs `(:write-string ~(str (pr-str val) "\n") :repl-result)))
+
+(defn with-env-locals
+  "Evals a form with given locals. The locals should be a map of symbols to
+values."
+  [form]
+  (let [m (local-non-functions *current-env*)]
+    (if (first m)
+      `(let ~(vec (mapcat #(list % (m %)) (keys m)))
+         ~form)
+      form)))
 
 (defn eval-in-emacs-package [form]
   (with-emacs-package
@@ -78,42 +113,118 @@
 (defn- debug-quit-exception? [t]
   (some #(identical? *debug-quit-exception* %) (exception-causes t)))
 
-(defn debug-loop
-  "A loop that is intented to take over an eval thread when a debug is
-   encountered (an continue to perform the same thing). It will
-   continue until a *debug-quit* exception is encountered."
-  ([] (try
-       (eval-loop)
-       (catch Throwable t
-         ;; exit loop when not a debug quit
-         (when-not (debug-quit-exception? t)
-           (throw t))))))
+(defn- debug-continue-exception? [t]
+  (some #(identical? *debug-continue-exception* %) (exception-causes t)))
 
-(defn exception-stacktrace [#^Throwable t]
+(defn- debug-abort-exception? [t]
+  (some #(identical? *debug-abort-exception* %) (exception-causes t)))
+
+(defn exception-stacktrace [t]
   (map #(list %1 %2 '(:restartable nil))
        (iterate inc 0)
        (map str (.getStackTrace t))))
 
-(def *debug-thread-id*)
-(defn invoke-debugger [#^Throwable thrown id]
-  (dothread-swank
-   (thread-set-name "Swank Debugger Thread")
-   (binding [*current-exception* thrown
-             *debug-thread-id* id]
-     (let [level 1
-           message (list (or (.getMessage thrown) "No message.")
-                         (str "  [Thrown " (class thrown) "]")
-                         nil)
-           options `(("ABORT" "Return to SLIME's top level.")
-                     ~@(when-let [cause (.getCause thrown)]
-                         '(("CAUSE" "Throw cause of this exception"))))
-           error-stack (exception-stacktrace thrown)
-           continuations (list id)]
-       (send-to-emacs (list :debug (current-thread) level message
-                            options error-stack continuations))
-       (send-to-emacs (list :debug-activate (current-thread) level true))
-       (debug-loop)
-       (send-to-emacs (list :debug-return (current-thread) level nil))))))
+(defn debugger-condition-for-emacs []
+  (list (or (.getMessage *current-exception*) "No message.")
+        (str "  [Thrown " (class *current-exception*) "]")
+        nil))
+
+(defn make-restart [kw name description f]
+  [kw [name description f]])
+
+(defn add-restart-if [condition restarts kw name description f]
+  (if condition
+    (conj restarts (make-restart kw name description f))
+    restarts))
+
+(declare sldb-debug)
+(defn cause-restart-for [thrown depth]
+  (make-restart
+   (keyword (str "cause" depth))
+   (str "CAUSE" depth)
+   (str "Invoke debugger on cause "
+        (apply str (take depth (repeat " ")))
+        (.getMessage thrown)
+        " [Thrown " (class thrown) "]")
+   (partial sldb-debug nil thrown *pending-continuations*)))
+
+(defn add-cause-restarts [restarts thrown]
+  (loop [restarts restarts
+         cause (.getCause thrown)
+         level 1]
+    (if cause
+      (recur
+       (conj restarts (cause-restart-for cause level))
+       (.getCause cause)
+       (inc level))
+      restarts)))
+
+(defn calculate-restarts [thrown]
+  (let [restarts [(make-restart :quit "QUIT" "Quit to the SLIME top level"
+                               (fn [] (throw *debug-quit-exception*)))]
+        restarts (add-restart-if
+                  (pos? *sldb-level*)
+                  restarts
+                  :abort "ABORT" (str "ABORT to SLIME level " (dec *sldb-level*))
+                  (fn [] (throw *debug-abort-exception*)))
+        restarts (add-restart-if
+                  (.contains (.getMessage thrown) "BREAK")
+                  restarts
+                  :continue "CONTINUE" (str "Continue from breakpoint")
+                  (fn [] (throw *debug-continue-exception*)))
+        restarts (add-cause-restarts restarts thrown)]
+    (into (array-map) restarts)))
+
+(defn format-restarts-for-emacs []
+  (doall (map #(list (first (second %)) (second (second %))) *sldb-restarts*)))
+
+(defn build-backtrace [start end]
+  (doall (take (- end start) (drop start (exception-stacktrace *current-exception*)))))
+
+(defn build-debugger-info-for-emacs [start end]
+  (list (debugger-condition-for-emacs)
+        (format-restarts-for-emacs)
+        (build-backtrace start end)
+        *pending-continuations*))
+
+(defn sldb-loop
+  "A loop that is intented to take over an eval thread when a debug is
+   encountered (an continue to perform the same thing). It will
+   continue until a *debug-quit* exception is encountered."
+  [level]
+  (try
+   (send-to-emacs
+    (list* :debug (current-thread) level
+           (build-debugger-info-for-emacs 0 *sldb-initial-frames*)))
+   ([] (continuously
+        (do
+          (send-to-emacs `(:debug-activate ~(current-thread) ~level nil))
+          (eval-from-control))))
+   (catch Throwable t
+     (send-to-emacs
+      `(:debug-return ~(current-thread) ~*sldb-level* ~*sldb-stepping-p*))
+     (if-not (debug-continue-exception? t)
+       (throw t)))))
+
+(defn invoke-debugger
+  [locals #^Throwable thrown id]
+  (binding [*current-env* locals
+            *current-exception* thrown
+            *sldb-restarts* (calculate-restarts thrown)
+            *sldb-level* (inc *sldb-level*)]
+    (sldb-loop *sldb-level*)))
+
+(defn sldb-debug [locals thrown id]
+  (try
+   (invoke-debugger nil thrown id)
+   (catch Throwable t
+     (when (and (pos? *sldb-level*)
+                (not (debug-abort-exception? t)))
+       (throw t)))))
+
+(defmacro break
+  []
+  `(invoke-debugger (local-bindings) (Exception. "BREAK:") *pending-continuations*))
 
 (defn doall-seq [coll]
   (if (seq? coll)
@@ -122,7 +233,8 @@
 
 (defn eval-for-emacs [form buffer-package id]
   (try
-   (binding [*current-package* buffer-package]
+   (binding [*current-package* buffer-package
+             *pending-continuations* (cons id *pending-continuations*)]
      (if-let [f (slime-fn (first form))]
        (let [form (cons f (rest form))
              result (doall-seq (eval-in-emacs-package form))]
@@ -136,22 +248,34 @@
      ;; Thread.stop was called on us it may be set and will cause an
      ;; InterruptedException in one of the send-to-emacs calls below
      (Thread/interrupted)
-     (set! *e t)
 
      ;; (.printStackTrace t #^java.io.PrintWriter *err*)
-     ;; Throwing to top level, let emacs know we're aborting
-     (when (debug-quit-exception? t)
-       (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id))
-       (throw t))
 
-     ;; start sldb, don't bother here because you can't actually
-     ;; recover with java
-     (invoke-debugger (if *debug-swank-clojure*
-                        t
-                        (.getCause t))
-                      id)
-     ;; reply with abort
-     (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id)))))
+     (cond
+      (debug-quit-exception? t)
+      (do
+        (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id))
+        (if-not (zero? *sldb-level*)
+          (throw t)))
+
+      (debug-abort-exception? t)
+      (do
+        (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id))
+        (if-not (zero? *sldb-level*)
+          (throw *debug-abort-exception*)))
+
+      (debug-continue-exception? t)
+      (throw t)
+
+      :else
+      (do
+        (set! *e t)
+        (sldb-debug
+         nil
+         (if *debug-swank-clojure* t (.getCause t))
+         id)
+        ;; reply with abort
+        (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id)))))))
 
 (defn- add-active-thread [thread]
   (dosync
