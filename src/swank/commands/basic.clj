@@ -43,8 +43,9 @@
 (defn- compile-region
   "Compile region."
   ([string file line]
-     (with-open [rdr (proxy [LineNumberingPushbackReader] ((StringReader. string))
-                       (getLineNumber [] line))]
+     (with-open [rdr1 (proxy [LineNumberingPushbackReader] ((StringReader. string)))
+                 rdr (proxy [LineNumberingPushbackReader] (rdr1)
+                         (getLineNumber [] (+ line (.getLineNumber rdr1) -1)))]
        (clojure.lang.Compiler/load rdr file (.getName (File. file))))))
 
 
