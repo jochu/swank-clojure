@@ -378,6 +378,30 @@ that symbols accessible in the current namespace go first."
         `((~(str (:name meta))
            (:error "Source definition not found.")))))))
 
+(defn who-specializes [class]
+  (letfn [(xref-lisp [sym] ; see find-definitions-for-emacs
+            (if-let [meta (and sym (meta sym))]
+              (if-let [path (slime-find-file (:file meta))]
+                      `((~(str "(method " (:name meta) ")")
+                          (:location
+                           ~path
+                           (:line ~(:line meta))
+                           nil)))
+                      `((~(str (:name meta))
+                          (:error "Source definition not found."))))
+              `((~(str "(method " (.getName sym) ")")
+                  (:error ~(format "%s - definition not found." sym))))))]
+         (let [methods (try (. class getMethods) 
+                            (catch java.lang.IllegalArgumentException e nil)
+                            (catch java.lang.NullPointerException e nil))]
+              (map xref-lisp methods))))     
+
+(defslimefn xref [type name]
+  (let [sexp (ns-resolve (maybe-ns *current-package*) (symbol name))]
+       (condp = type
+              :specializes (who-specializes sexp)
+              :callers nil
+              :not-implemented)))
 
 (defslimefn throw-to-toplevel []
   (throw *debug-quit-exception*))
