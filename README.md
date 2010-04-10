@@ -12,17 +12,26 @@ Depending on what you're using it for, Swank Clojure can be invoked in
 a few different ways:
         
 1. Standalone Session: If you just hit M-x slime, swank-clojure will
-   download the jars for Clojure, contrib, and swank-clojure,
-   launch an instance, and connect to it. If you just want to try out
+   download the jars for Clojure, contrib, and swank-clojure, launch
+   an instance, and connect to it. If you just want to try out
    Clojure, this is all you need. Just get Swank Clojure through
-   [ELPA](http://tromey.com/elpa) and stop reading here. =)
+   [ELPA](http://tromey.com/elpa) and stop reading here. =) But this
+   is intended for experimentation; for real work in the context of a
+   project you will probably want the next option.
 
-2. Custom classpath: If you want to hack on Clojure or Contrib or want
+2. Standalone Server: Users of Leiningen or clojure-maven-plugin can
+   [launch a server from a
+   shell](http://wiki.github.com/technomancy/leiningen/emacs-integration)
+   and connect to it from within Emacs using M-x slime-connect.
+
+3. Custom classpath: If you want to hack on Clojure or Contrib or want
    to provide your own copy of the jars for some other reason, set
    swank-clojure-classpath to a list of paths to the jars you want to
-   use and then hit M-x slime.
+   use and then hit M-x slime. If you have a ~/.clojure or
+   ~/.swank-clojure directory full of jars you want to use, you don't
+   need to set swank-clojure-classpath.
 
-3. Project: Put your project's dependencies in the lib/ directory,
+4. Project: Put your project's dependencies in the lib/ directory,
    (either manually or using
    [Leiningen](http://github.com/technomancy/leiningen) or Maven) then
    launch M-x swank-clojure-project. Note that you must have
@@ -30,15 +39,9 @@ a few different ways:
    add itself to the classpath as it did in past versions that had to
    run from a checkout.
 
-4. Standalone Server: Users of Leiningen or clojure-maven-plugin can
-   [launch a server from a
-   shell](http://wiki.github.com/technomancy/leiningen/emacs-integration)
-   and connect to it from within Emacs using M-x slime-connect.
-
 Because the JVM classpath can't be modified at runtime, you can't
 start a session with plain M-x slime and then decide to work on your
-project; you'll need to start a new slime session with M-x
-swank-clojure-project.
+project; you'll need to start a new slime session.
 
 ## Installation
 
@@ -49,11 +52,11 @@ the byte-compilation of the packages. This is normal; the packages
 will work just fine even if there are problems compiling it upon
 installation.
 
-If you're only going to use #4 above, you'll only need the
+If you're only going to use #2 above, you'll only need the
 "slime-repl" package. Otherwise get the "swank-clojure" package.
 
 While it's possible to install swank-clojure manually, it's not
-recommended. ELPA will be included in the next version of Emacs and
+recommended. package.el will be included in the next version of Emacs and
 has been a standard piece of the Emacs ecosystem for a while
 now. See the "Installing from Source" section below if you wish to
 hack on a development version that hasn't been released yet.
@@ -172,7 +175,7 @@ ensure that you have a compatible version.
 
 ## License
 
-Copyright (C) 2008-2009 Jeffrey Chu, Phil Hagelberg
+Copyright (C) 2008-2010 Jeffrey Chu, Phil Hagelberg, Hugo Duncan, and contributors
 
 This file is licensed under the terms of the GNU General Public
 License as distributed with Emacs (press C-h C-c to view it).
