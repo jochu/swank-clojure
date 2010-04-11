@@ -322,8 +322,18 @@ The `path' variable is bound to the project root when these functions run.")
                      (locate-dominating-file default-directory "src")
                    default-directory))))
   ;; Trying to locate project's root directory starting from `path'
+  ;; FIXME: using `cd' this way changes `default-directory' of the
+  ;; buffer where `swank-clojure-project' is invoked, which can be
+  ;; undesirable. Consider wrapping `slime' in a `let' instead.
   (when (functionp 'locate-dominating-file)
-    (cd (locate-dominating-file path "project.clj")))
+    (cd (let ((leiningen-root (locate-dominating-file path "project.clj"))
+              (maven-root (locate-dominating-file path "pom.xml")))
+          (cond ((not (null leiningen-root)) ; Leiningen
+                 leiningen-root)
+                ((not (null maven-root)) ; Maven
+                 maven-root)
+                (t                      ; Something else
+                 path)))))
   ;; TODO: allow multiple SLIME sessions per Emacs instance
   (when (get-buffer "*inferior-lisp*") (kill-buffer "*inferior-lisp*"))
 
