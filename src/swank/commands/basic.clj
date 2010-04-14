@@ -14,13 +14,18 @@
 (defslimefn connection-info []
   `(:pid ~(sys/get-pid)
     :style :spawn
-    :lisp-implementation (:type "clojure" :name "clojure")
+    :lisp-implementation (:type "Clojure"
+                          :name "clojure"
+                          :version ~(clojure-version))
     :package (:name ~(name (ns-name *ns*))
               :prompt ~(name (ns-name *ns*)))
     :version ~(deref *protocol-version*)))
 
 (defslimefn quit-lisp []
   (System/exit 0))
+
+(defslimefn toggle-debug-on-swank-error []
+  (alter-var-root #'swank.core/*debug-swank-clojure* not))
 
 ;;;; Evaluation
 
@@ -252,7 +257,7 @@ that symbols accessible in the current namespace go first."
       :else nil))
    (catch Throwable t nil)))
 
-;;;; Completions
+;;;; Package Commands
 
 (defslimefn list-all-package-names
   ([] (map (comp str ns-name) (all-ns)))
@@ -263,6 +268,37 @@ that symbols accessible in the current namespace go first."
     (in-ns (ns-name ns))
     (list (str (ns-name ns))
           (str (ns-name ns)))))
+
+;;;; Tracing
+
+(defonce traced-fn-map {})
+
+(defn- trace-fn-call [sym f args]
+ (let [fname (symbol (str (.name (.ns sym)) "/" (.sym sym)))]
+   (println (str "Calling")
+            (apply str (take 240 (pr-str (when fname (cons fname args)) ))))
+   (let [result (apply f args)]
+     (println (str fname " returned " (apply str (take 240 (pr-str result)))))
+     result)))
+
+(defslimefn swank-toggle-trace [fname]
+ (when-let [sym (ns-resolve (maybe-ns *current-package*) (symbol fname))]
+   (if-let [f# (get traced-fn-map sym)]
+     (do
+       (alter-var-root #'traced-fn-map dissoc sym)
+       (alter-var-root sym (constantly f#))
+       (str " untraced."))
+     (let [f# @sym]
+       (alter-var-root #'traced-fn-map assoc sym f#)
+       (alter-var-root sym
+         (constantly
+           (fn [& args]
+             (trace-fn-call sym f# args))))
+       (str " traced.")))))
+
+(defslimefn untrace-all []
+ (doseq [sym (keys traced-fn-map)]
+   (swank-toggle-trace (.sym sym))))
 
 ;;;; Source Locations
 (comment
@@ -342,6 +378,30 @@ that symbols accessible in the current namespace go first."
         `((~(str (:name meta))
            (:error "Source definition not found.")))))))
 
+(defn who-specializes [class]
+  (letfn [(xref-lisp [sym] ; see find-definitions-for-emacs
+            (if-let [meta (and sym (meta sym))]
+              (if-let [path (slime-find-file (:file meta))]
+                      `((~(str "(method " (:name meta) ")")
+                          (:location
+                           ~path
+                           (:line ~(:line meta))
+                           nil)))
+                      `((~(str (:name meta))
+                          (:error "Source definition not found."))))
+              `((~(str "(method " (.getName sym) ")")
+                  (:error ~(format "%s - definition not found." sym))))))]
+         (let [methods (try (. class getMethods) 
+                            (catch java.lang.IllegalArgumentException e nil)
+                            (catch java.lang.NullPointerException e nil))]
+              (map xref-lisp methods))))     
+
+(defslimefn xref [type name]
+  (let [sexp (ns-resolve (maybe-ns *current-package*) (symbol name))]
+       (condp = type
+              :specializes (who-specializes sexp)
+              :callers nil
+              :not-implemented)))
 
 (defslimefn throw-to-toplevel []
   (throw *debug-quit-exception*))

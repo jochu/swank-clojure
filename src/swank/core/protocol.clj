@@ -1,6 +1,7 @@
 (ns swank.core.protocol
   (:use (swank util)
-        (swank.util io)))
+        (swank.util io))
+  (:require swank.rpc))
 
 ;; Read forms
 (def #^{:private true}
@@ -13,21 +14,10 @@
 
 (defn write-swank-message
   "Given a `writer' (java.io.Writer) and a `message' (typically an
-   sexp), encode the message according to the slime protocol and
-   write the message into the writer.
-   
-   The protocol itself is simply a 6-character hex string,
-   representing the message length, followed by a lisp-readable
-   version of the message itself.
-
-   See also `read-swank-message'."
+   sexp), encode the message according to the swank protocol and
+   write the message into the writer."
   ([#^java.io.Writer writer message]
-     (let [s   (pr-str message)
-           len (.length s)]
-       (doto writer
-         (.write (format "%06x" len))
-         (.write s)
-         (.flush))))
+     (swank.rpc/encode-message writer message)) 
   {:tag String})
 
 (def read-fail-exception (Exception. "Error reading swank message"))
