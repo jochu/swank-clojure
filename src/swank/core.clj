@@ -168,7 +168,8 @@ values."
                   :abort "ABORT" (str "ABORT to SLIME level " (dec *sldb-level*))
                   (fn [] (throw *debug-abort-exception*)))
         restarts (add-restart-if
-                  (.contains (.getMessage thrown) "BREAK")
+                  (and (.getMessage thrown)
+                       (.contains (.getMessage thrown) "BREAK"))
                   restarts
                   :continue "CONTINUE" (str "Continue from breakpoint")
                   (fn [] (throw *debug-continue-exception*)))
