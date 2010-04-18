@@ -34,13 +34,8 @@ Example: (get-source-from-var 'filter)"
 
 
 (defn- recursive-contains? [coll obj]
-  "True if coll contains obj at some level of nesting"
-  (some #(= % true)
-        (flatten
-         (postwalk
-          (fn [node]
-            (if (= node obj) true node))
-          coll))))
+  "True if coll contains obj. Obj can't be a seq"
+  (not (empty? (filter #(= obj %) (flatten coll)))))
 
 (defn- does-var-call-fn [var fn]
   "Checks if a var calls a function named 'fn"
@@ -53,7 +48,7 @@ Example: (get-source-from-var 'filter)"
 (defn- does-ns-refer-to-var? [ns var]
   (ns-resolve ns var))
 
-(defn who-calls [sym]
+(defn all-vars-who-call [sym]
   (filter
    ifn?
    (filter
@@ -64,5 +59,3 @@ Example: (get-source-from-var 'filter)"
                (map ns-interns
                     (filter #(does-ns-refer-to-var? % sym)
                             (all-ns)))))))))
-
-

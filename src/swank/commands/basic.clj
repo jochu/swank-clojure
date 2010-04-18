@@ -4,7 +4,8 @@
         (swank.util.concurrent thread)
         (swank.util string clojure)
         (swank.clj-contrib pprint macroexpand))
-  (:require (swank.util [sys :as sys]))
+  (:require (swank.util [sys :as sys])
+            (swank.commands [xref :as xref]))
   (:import (java.io StringReader File)
            (java.util.zip ZipFile)
            (clojure.lang LineNumberingPushbackReader)))
@@ -407,7 +408,7 @@ that symbols accessible in the current namespace go first."
                              nil)))
                          `((~(str (:name meta))
                             (:error "Source definition not found."))))))]
-    (let [callers (swank.commands.xref/who-calls name) ]
+    (let [callers (xref/all-vars-who-call name) ]
       (map first (map xref-lisp callers)))))
 
 (defslimefn xref [type name]
