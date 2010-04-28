@@ -177,8 +177,9 @@ ensure that you have a compatible version.
 
 Copyright (C) 2008-2010 Jeffrey Chu, Phil Hagelberg, Hugo Duncan, and contributors
 
-This file is licensed under the terms of the GNU General Public
-License as distributed with Emacs (press C-h C-c to view it).
+The Clojure server is licensed under the EPL. (See the file COPYING.)
+The Emacs code is licensed under the GNU General Public License
+version 3, which should have been distributed with your copy of Emacs.
 
 [1] - [ELPA](http://tromey.com/elpa/install.html) is the Emacs Lisp
   Package Archive. It brings a real package manager to Emacs.
