@@ -48,14 +48,14 @@
 (defn start-server
   "Start the server and write the listen port number to
    PORT-FILE. This is the entry point for Emacs."
-  ([port-file & opts]
-     (let [opts (apply hash-map opts)]
-       (setup-server (get opts :port 0)
-                     (fn announce-port [port]
-                       (announce-port-to-file port-file port)
-                       (simple-announce port))
-                     connection-serve
-                     opts))))
+  [port-file & opts]
+  (let [opts (apply hash-map opts)]
+    (setup-server (get opts :port 0)
+                  (fn announce-port [port]
+                    (announce-port-to-file port-file port)
+                    (simple-announce port))
+                  connection-serve
+                  opts)))
 
 (defn start-repl
   "Start the server wrapped in a repl. Use this to embed swank in your code."
@@ -68,7 +68,7 @@
                        (apply hash-map opts))]
        (repl :read (fn [rprompt rexit]
                      (if @stop rexit
-                         (do (swap! stop (fn [_] true))
+                         (do (reset! stop true)
                              `(do (ignore-protocol-version nil)
                                   (start-server (-> "java.io.tmpdir"
                                                     (System/getProperty)
