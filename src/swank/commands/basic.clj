@@ -45,6 +45,15 @@
                     (eval (with-env-locals form))
                     form)))))))
 
+(defn- compile-region
+  "Compile region."
+  ([string file line]
+     (with-open [rdr1 (proxy [LineNumberingPushbackReader] ((StringReader. string)))
+                 rdr (proxy [LineNumberingPushbackReader] (rdr1)
+                         (getLineNumber [] (+ line (.getLineNumber rdr1) -1)))]
+       (clojure.lang.Compiler/load rdr file (.getName (File. file))))))
+
+
 (defslimefn interactive-eval-region [string]
   (with-emacs-package
     (pr-str (first (eval-region string)))))
@@ -151,7 +160,12 @@
 (defslimefn compile-string-for-emacs [string buffer position directory debug]
   (let [start (System/nanoTime)
         line (line-at-position directory position)
-        ret (with-emacs-package (eval-region string directory line))
+        ret (with-emacs-package
+              (when-not (= (name (ns-name *ns*)) *current-package*)
+                (throw (clojure.lang.Compiler$CompilerException.
+                        directory line
+                        (Exception. (str "No such namespace: " *current-package*)))))
+              (compile-region string directory line))
         delta (- (System/nanoTime) start)]
     `(:compilation-result nil ~(pr-str ret) ~(/ delta 1000000000.0))))
 
