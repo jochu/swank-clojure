@@ -4,7 +4,7 @@
  #^{:private true}
  pprint-enabled?
  (try
-  ;; 1.1.0
+  ;; 1.0, 1.1
   (do
     (.loadClass (clojure.lang.RT/baseLoader) "clojure.contrib.pprint.PrettyWriter")
     (use 'clojure.contrib.pprint)
@@ -18,7 +18,7 @@
     true)
   (catch Exception e
     (try
-     ;; 1.2.0
+     ;; 1.2
      (do
        (.getResource (clojure.lang.RT/baseLoader) "clojure/pprint")
        (use 'clojure.pprint)
