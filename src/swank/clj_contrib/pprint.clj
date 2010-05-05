@@ -1,7 +1,7 @@
 (ns swank.clj-contrib.pprint)
 
 (def
- #^{:private true}
+ ^{:private true}
  pprint-enabled?
  (try
   ;; 1.0, 1.1
@@ -11,7 +11,7 @@
     (defmacro pretty-pr-code*
       ([code]
          (if pprint-enabled?
-           `(binding [*print-suppress-namespaces* true]
+           `(binding [pp/*print-suppress-namespaces* true]
               (pp/with-pprint-dispatch pp/*code-dispatch* (pp/write ~code :pretty true :stream nil)))
            `(pr-str ~code)))
       {:private true})
@@ -25,8 +25,8 @@
        (defmacro pretty-pr-code*
          ([code]
             (if pprint-enabled?
-              `(binding [*print-suppress-namespaces* true]
-                 (with-pprint-dispatch code-dispatch (write ~code :pretty true :stream nil)))
+              `(binding [pp/*print-suppress-namespaces* true]
+                 (pp/with-pprint-dispatch pp/code-dispatch (pp/write ~code :pretty true :stream nil)))
               `(pr-str ~code)))
          {:private true})
        true)
