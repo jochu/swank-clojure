@@ -7,12 +7,12 @@
   ;; 1.0, 1.1
   (do
     (.loadClass (clojure.lang.RT/baseLoader) "clojure.contrib.pprint.PrettyWriter")
-    (use 'clojure.contrib.pprint)
+    (require '[clojure.contrib.pprint :as pp])
     (defmacro pretty-pr-code*
       ([code]
          (if pprint-enabled?
            `(binding [*print-suppress-namespaces* true]
-              (with-pprint-dispatch *code-dispatch* (write ~code :pretty true :stream nil)))
+              (pp/with-pprint-dispatch pp/*code-dispatch* (pp/write ~code :pretty true :stream nil)))
            `(pr-str ~code)))
       {:private true})
     true)
@@ -21,7 +21,7 @@
      ;; 1.2
      (do
        (.getResource (clojure.lang.RT/baseLoader) "clojure/pprint")
-       (use 'clojure.pprint)
+       (require '[clojure.pprint :as pp])
        (defmacro pretty-pr-code*
          ([code]
             (if pprint-enabled?
