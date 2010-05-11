@@ -4,7 +4,8 @@
         (swank.util.concurrent thread)
         (swank.util string clojure)
         (swank.clj-contrib pprint macroexpand))
-  (:require (swank.util [sys :as sys]))
+  (:require (swank.util [sys :as sys])
+            (swank.commands [xref :as xref]))
   (:import (java.io StringReader File)
            (java.util.zip ZipFile)
            (clojure.lang LineNumberingPushbackReader)))
@@ -398,29 +399,43 @@ that symbols accessible in the current namespace go first."
 
 (defn who-specializes [class]
   (letfn [(xref-lisp [sym] ; see find-definitions-for-emacs
-                     (if-let [meta (and sym (meta sym))]
+            (if-let [meta (and sym (meta sym))]
+              (if-let [path (slime-find-file (:file meta))]
+                      `((~(str "(method " (:name meta) ")")
+                          (:location
+                           ~path
+                           (:line ~(:line meta))
+                           nil)))
+                      `((~(str (:name meta))
+                          (:error "Source definition not found."))))
+              `((~(str "(method " (.getName sym) ")")
+                  (:error ~(format "%s - definition not found." sym))))))]
+         (let [methods (try (. class getMethods)
+                            (catch java.lang.IllegalArgumentException e nil)
+                            (catch java.lang.NullPointerException e nil))]
+              (map xref-lisp methods))))
+
+(defn who-calls [name]
+  (letfn [(xref-lisp [sym-var]        ; see find-definitions-for-emacs
+                     (when-let [meta (and sym-var (meta sym-var))]
                        (if-let [path (slime-find-file (:file meta))]
-                         `((~(str "(method " (:name meta) ")")
+                         `((~(str (:name meta))
                             (:location
                              ~path
                              (:line ~(:line meta))
                              nil)))
                          `((~(str (:name meta))
-                            (:error "Source definition not found."))))
-                       `((~(str "(method " (.getName sym) ")")
-                          (:error ~(format "%s - definition not found."
-                                           sym))))))]
-    (let [methods (try (. class getMethods)
-                       (catch java.lang.IllegalArgumentException e nil)
-                       (catch java.lang.NullPointerException e nil))]
-      (map xref-lisp methods))))
+                            (:error "Source definition not found."))))))]
+    (let [callers (xref/all-vars-who-call name) ]
+      (map first (map xref-lisp callers)))))
 
 (defslimefn xref [type name]
   (let [sexp (ns-resolve (maybe-ns *current-package*) (symbol name))]
-    (condp = type
-        :specializes (who-specializes sexp)
-        :callers nil
-        :not-implemented)))
+       (condp = type
+              :specializes (who-specializes sexp)
+              :calls   (who-calls (symbol name))
+              :callers nil
+              :not-implemented)))
 
 (defslimefn throw-to-toplevel []
   (throw *debug-quit-exception*))
