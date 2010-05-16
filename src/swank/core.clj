@@ -6,7 +6,7 @@
   (:require (swank.util.concurrent [mbox :as mb])))
 
 ;; Protocol version
-(defonce *protocol-version* (ref nil))
+(defonce *protocol-version* (atom "20100404"))
 
 ;; Emacs packages
 (def *current-package*)
