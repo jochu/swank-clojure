@@ -17,13 +17,13 @@ under :dev-dependencies:
 Once you run "lein deps" you can launch a swank server from the
 command line:
 
-    $ lein swank [PORT] [HOST]
+    $ lein swank [PORT=4005] [HOST=localhost]
 
 Note that the lein-swank plugin now comes with Swank Clojure; it does
 not need to be specified as a separate dependency any more.
 
 If you're using Maven, add this to your pom.xml under the
-<dependencies> section:
+\<dependencies\> section:
 
     <dependency>
       <groupId>swank-clojure</groupId>
@@ -42,7 +42,7 @@ also cannot change the port from Maven; it's hard-coded to 4005.
 ## Connecting with SLIME
 
 Install the "slime-repl" package [from ELPA](http://tromey.com/elpa)
-using package.el[1]. When you perform the installation, you will see
+using package.el. When you perform the installation, you will see
 warnings related to the byte-compilation of the packages. This is
 **normal**; the packages will work just fine even if there are
 problems byte-compiling it upon installation.
@@ -51,8 +51,9 @@ Then you should be able to connect to the swank server you launched:
 
     M-x slime-connect
 
-It will prompt you for your host and port. It may also warn you that
-your SLIME version doesn't match your Swank version; this should be OK.
+It will prompt you for your host (usually localhost) and port. It may
+also warn you that your SLIME version doesn't match your Swank
+version; this should be OK.
 
 Having old versions of SLIME either manually installed or installed
 using a system-wide package manager like apt-get may cause issues.
@@ -107,19 +108,11 @@ for an explanation of this excellent feature. Further documentation to come.
 Previous versions of Swank Clojure bundled an Elisp library called
 swank-clojure.el that provided ways to launch your swank server from
 within your Emacs process. While swank-clojure is still distributed
-with the project, it's a much more error-prone way of doing things.
+with the project, it's a much more error-prone way of doing things
+than the method outlined above.
 
-If you have configured your system to use M-x swank-clojure-project,
+If you have configured your Emacs to use M-x swank-clojure-project
 then it should still work, but it's not recommended for new users.
-
-## Keeping Common Lisp
-
-If you want to use SLIME with Common Lisp or another Lisp
-implementation, add this to your Emacs config:
-
-    (add-to-list 'slime-lisp-implementations '(sbcl ("sbcl")))
-
-Then launch SLIME with M-- M-x slime $LISP instead of just M-x slime.
 
 ## Community
 
@@ -141,6 +134,3 @@ Copyright (C) 2008-2010 Jeffrey Chu, Phil Hagelberg, Hugo Duncan, and
 contributors
 
 Licensed under the EPL. (See the file COPYING.)
-
-[1] - [ELPA](http://tromey.com/elpa/install.html) is the Emacs Lisp
-  Package Archive. It brings a real package manager to Emacs.
