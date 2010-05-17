@@ -12,7 +12,7 @@ Add Swank Clojure to your project as a development dependency to your
 project. If you are using Leiningen, add it to your project.clj file
 under :dev-dependencies:
 
-    :dev-dependencies [[swank-clojure "1.2.0"]]
+    :dev-dependencies [[swank-clojure "1.2.1"]]
 
 Once you run "lein deps" you can launch a swank server from the
 command line:
@@ -28,7 +28,7 @@ If you're using Maven, add this to your pom.xml under the
     <dependency>
       <groupId>swank-clojure</groupId>
       <artifactId>swank-clojure</artifactId>
-      <version>1.2.0</version>
+      <version>1.2.1</version>
     </dependency>
 
 Then you can launch a swank server like so:

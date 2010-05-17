@@ -20,6 +20,9 @@
            [java.io File])
   (:gen-class))
 
+(defn ignore-protocol-version [version]
+  (reset! *protocol-version* version))
+
 (defn- connection-serve [conn]
   (let [control
         (dothread-swank
