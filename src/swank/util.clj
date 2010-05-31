@@ -39,6 +39,11 @@
                    (assoc ret k (conj (get ret k []) x))))
                {})))))
 
+(when-not (ns-resolve 'clojure.core 'flatten)
+  (eval '(defn flatten [x]
+           (filter (complement sequential?)
+                   (rest (tree-seq sequential? seq x))))))
+
 (defmacro returning [[var ret] & body]
   `(let [~var ~ret]
      ~@body

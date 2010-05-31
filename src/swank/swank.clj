@@ -21,7 +21,7 @@
   (:gen-class))
 
 (defn ignore-protocol-version [version]
-  (dosync (ref-set *protocol-version* version)))
+  (reset! *protocol-version* version))
 
 (defn- connection-serve [conn]
   (let [control
@@ -69,12 +69,11 @@
        (repl :read (fn [rprompt rexit]
                      (if @stop rexit
                          (do (reset! stop true)
-                             `(do (ignore-protocol-version nil)
-                                  (start-server (-> "java.io.tmpdir"
-                                                    (System/getProperty)
-                                                    (File. "slime-port.txt")
-                                                    (.getCanonicalPath))
-                                                ~@(apply concat opts))))))
+                             `(start-server (-> "java.io.tmpdir"
+                                                (System/getProperty)
+                                                (File. "slime-port.txt")
+                                                (.getCanonicalPath))
+                                            ~@(apply concat opts)))))
              :need-prompt #(identity false))))
   ([] (start-repl 4005)))
 
