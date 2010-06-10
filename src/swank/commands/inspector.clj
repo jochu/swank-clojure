@@ -181,7 +181,7 @@
      (mapcat (fn [m]
                `("  " (:value ~m) (:newline))) meths))))
 
-(defmethod emacs-inspect :aref [#^ARef obj]
+(defmethod emacs-inspect :aref [#^clojure.lang.ARef obj]
   `("Type: " (:value ~(class obj)) (:newline)
     "Value: " (:value ~(deref obj)) (:newline)))
 
