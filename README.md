@@ -62,7 +62,7 @@ using a system-wide package manager like apt-get may cause issues.
 
 Commonly-used SLIME commands:
 
-* **M-TAB**: Autocomplete symbol at point
+* **C-c TAB**: Autocomplete symbol at point
 * **C-x C-e**: Eval the form under the point
 * **C-c C-k**: Compile the current buffer
 * **M-.**: Jump to the definition of a var
