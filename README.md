@@ -41,11 +41,16 @@ also cannot change the port from Maven; it's hard-coded to 4005.
 
 ## Connecting with SLIME
 
-Install the "slime-repl" package [from ELPA](http://tromey.com/elpa)
-using package.el. When you perform the installation, you will see
-warnings related to the byte-compilation of the packages. This is
-**normal**; the packages will work just fine even if there are
-problems byte-compiling it upon installation.
+Install the "slime-repl" package from ELPA using package.el. When you
+perform the installation, you will see warnings related to the
+byte-compilation of the packages. This is **normal**; the packages
+will work just fine even if there are problems byte-compiling it upon
+installation.
+
+There is a known bug in the latest release of package.el that can
+cause packages to fail to install in certain circumstances. The
+[version with the fixes applied](http://github.com/technomancy/package.el)
+is available on Github.
 
 Then you should be able to connect to the swank server you launched:
 
