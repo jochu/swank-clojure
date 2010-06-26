@@ -300,12 +300,20 @@ that symbols accessible in the current namespace go first."
 
 (defonce traced-fn-map {})
 
+(def *trace-level* 0)
+
+(defn- indent [num]
+  (dotimes [x (+ 1 num)]
+    (print "  ")))
+
 (defn- trace-fn-call [sym f args]
   (let [fname (symbol (str (.name (.ns sym)) "/" (.sym sym)))]
-    (println (str "Calling")
+    (indent *trace-level*)
+    (println (str *trace-level* ":")
              (apply str (take 240 (pr-str (when fname (cons fname args)) ))))
-    (let [result (apply f args)]
-      (println (str fname " returned " (apply str (take 240 (pr-str result)))))
+    (let [result (binding [*trace-level* (+ *trace-level* 1)] (apply f args))]
+      (indent *trace-level*)
+      (println (str *trace-level* ": " fname " returned " (apply str (take 240 (pr-str result)))))
       result)))
 
 (defslimefn swank-toggle-trace [fname]
