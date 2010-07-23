@@ -469,8 +469,8 @@ that symbols accessible in the current namespace go first."
 
 (defslimefn frame-catch-tags-for-emacs [n] nil)
 (defslimefn frame-locals-for-emacs [n]
-  (if (and (zero? n) *current-env*)
-    (locals-for-emacs (local-non-functions *current-env*))))
+  (if (and (zero? n) (seq *current-env*))
+    (locals-for-emacs *current-env*)))
 
 (defslimefn frame-locals-and-catch-tags [n]
   (list (frame-locals-for-emacs n)

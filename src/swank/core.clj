@@ -67,9 +67,6 @@
       (let [symbols (keys &env)]
         (zipmap (map (fn [sym] `(quote ~sym)) symbols) symbols)))))
 
-(defn local-non-functions [m]
-  (select-keys m  (filter #(or (coll? (m %)) (not (ifn? (m %)))) (keys m))))
-
 ;; Handle Evaluation
 (defn send-to-emacs
     "Sends a message (msg) to emacs."
@@ -83,11 +80,10 @@
   "Evals a form with given locals. The locals should be a map of symbols to
 values."
   [form]
-  (let [m (local-non-functions *current-env*)]
-    (if (first m)
-      `(let ~(vec (mapcat #(list % (m %)) (keys m)))
-         ~form)
-      form)))
+  (if (seq *current-env*)
+    `(let ~(vec (mapcat #(list % `(*current-env* '~%)) (keys *current-env*)))
+       ~form)
+    form))
 
 (defn eval-in-emacs-package [form]
   (with-emacs-package

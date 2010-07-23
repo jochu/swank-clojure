@@ -266,7 +266,7 @@
 
 (defslimefn inspect-frame-var [frame index]
   (if (and (zero? frame) *current-env*)
-    (let [locals (local-non-functions *current-env*)
+    (let [locals *current-env*
           object (locals (nth (keys locals) index))]
       (with-emacs-package
         (reset-inspector)
