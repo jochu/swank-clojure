@@ -61,7 +61,7 @@
   "Start the server wrapped in a repl. Use this to embed swank in your code."
   ([port & opts]
      (let [stop (atom false)
-           opts (merge {:port port
+           opts (merge {:port (Integer. port)
                         :encoding (or (System/getProperty
                                        "swank.encoding")
                                       "iso-latin-1-unix")}

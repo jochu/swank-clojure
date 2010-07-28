@@ -93,8 +93,8 @@ You can embed Swank Clojure in your project, start the server from
 within your own code, and connect via Emacs to that instance:
 
     (ns my-app
-      (:use [swank.swank :as swank]))
-    (swank/start-repl) ;; optionally takes a port argument
+      (:require [swank.swank]))
+    (swank.swank/start-repl) ;; optionally takes a port argument
 
 Then use M-x slime-connect to connect from within Emacs.
 
