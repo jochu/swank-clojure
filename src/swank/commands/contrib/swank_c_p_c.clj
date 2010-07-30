@@ -7,8 +7,11 @@
 (defslimefn completions [symbol-string package]
   (try
    (let [[sym-ns sym-name] (symbol-name-parts symbol-string)
-         potential         (potential-completions (concat (when sym-ns (symbol sym-ns)) (ns-name (maybe-ns package))
-                                                          (potiential-classes-on-path symbol-string)))
+         potential         (concat
+			    (potential-completions
+			     (when sym-ns (symbol sym-ns))
+			     (ns-name (maybe-ns package)))
+			    (potintial-classes-on-path symbol-string))
          matches           (seq (sort (filter #(split-compound-prefix-match? symbol-string %) potential)))]
      (list matches
            (if matches
