@@ -5,7 +5,11 @@
   "Launch swank server for Emacs to connect. Optionally takes PORT and HOST."
   ([project port host & opts]
      (eval-in-project project
-                      `(do (require '~'swank.swank)
+                      `(do
+                         (let [is# ~(:init-script project)]
+                           (when is#
+                             (load-file is#)))
+                         (require '~'swank.swank)
                            (@(ns-resolve '~'swank.swank '~'start-repl)
                             (Integer. ~port)
                             ~@(concat (map read-string opts)
