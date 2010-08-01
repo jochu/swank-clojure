@@ -1,5 +1,6 @@
 (ns leiningen.swank
-  (:use [leiningen.compile :only [eval-in-project]]))
+  (:use [leiningen.compile :only [eval-in-project]])
+  (:import [java.io File]))
 
 (defn swank
   "Launch swank server for Emacs to connect. Optionally takes PORT and HOST."
@@ -7,7 +8,7 @@
      (eval-in-project project
                       `(do
                          (let [is# ~(:init-script project)]
-                           (when is#
+                           (when (and is# (.exists (File. is#)))
                              (load-file is#)))
                          (require '~'swank.swank)
                            (@(ns-resolve '~'swank.swank '~'start-repl)
