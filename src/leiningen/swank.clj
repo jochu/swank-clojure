@@ -8,7 +8,7 @@
   ([project port host & opts]
      (eval-in-project project
                       `(do
-                         (let [is# ~(:init-script project)
+                         (let [is# ~(:repl-init-script project)
                                gis# ~(get-global-init-script)]
                            (when (not (nil? gis#))
                              (load-file gis#))
