@@ -1,6 +1,5 @@
 (ns leiningen.swank
-  (:use [leiningen.compile :only [eval-in-project]]
-        [leiningen.core :only [get-global-init-script]])
+  (:use [leiningen.compile :only [eval-in-project]])
   (:import [java.io File]))
 
 (defn swank
