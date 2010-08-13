@@ -8,10 +8,7 @@
   ([project port host & opts]
      (eval-in-project project
                       `(do
-                         (let [is# ~(:repl-init-script project)
-                               gis# ~(get-global-init-script)]
-                           (when (not (nil? gis#))
-                             (load-file gis#))
+                         (let [is# ~(:repl-init-script project)]
                            (when (and (not (nil? is#)) (.exists (File. (str is#))))
                              (load-file is#)))
                          (require '~'swank.swank)
