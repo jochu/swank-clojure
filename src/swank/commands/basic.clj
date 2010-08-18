@@ -181,7 +181,9 @@
 
 (defn- describe-symbol* [symbol-name]
   (with-emacs-package
-    (if-let [v (ns-resolve (maybe-ns *current-package*) (symbol symbol-name))]
+    (if-let [v (try
+                 (ns-resolve (maybe-ns *current-package*) (symbol symbol-name))
+                 (catch ClassNotFoundException e nil))]
       (describe-to-string v)
       (str "Unknown symbol " symbol-name))))
 
