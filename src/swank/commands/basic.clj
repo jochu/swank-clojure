@@ -181,11 +181,11 @@
 
 (defn- describe-symbol* [symbol-name]
   (with-emacs-package
-    (if-let [v (try
-                 (ns-resolve (maybe-ns *current-package*) (symbol symbol-name))
+    (let [v (try (ns-resolve (maybe-ns *current-package*) (symbol symbol-name))
                  (catch ClassNotFoundException e nil))]
-      (describe-to-string v)
-      (str "Unknown symbol " symbol-name))))
+      (if (var? v)
+        (describe-to-string v)
+        (str "Unknown symbol " symbol-name)))))
 
 (defslimefn describe-symbol [symbol-name]
   (describe-symbol* symbol-name))
