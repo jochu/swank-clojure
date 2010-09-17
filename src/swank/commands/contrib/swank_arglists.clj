@@ -39,9 +39,9 @@
            current (first arglists)
            remaining (rest arglists)]
       (if (position-in-arglist? current pos)
-        (into '() (concat checked
-                          [(highlight-position current pos)]
-                          remaining))
+        (apply list (concat checked
+                            [(highlight-position current pos)]
+                            remaining))
         (when (seq remaining)
           (recur (conj checked current)
                  (first remaining)
