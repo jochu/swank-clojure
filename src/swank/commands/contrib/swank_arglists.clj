@@ -50,7 +50,7 @@
 ;; (highlight-arglists "([x] [x & more])" 1)
 ;; => ([===> x <===] [x & more])
 
-(defmacro dbg[x] `(let [x# ~x] (println '~x "->" x#) x#))
+;;(defmacro dbg[x] `(let [x# ~x] (println '~x "->" x#) x#))
 
 (defn arglists-for-fname [fname]
   ((slime-fn 'operator-arglist) fname *current-package*))
@@ -86,8 +86,8 @@
                                  (#{"let" "binding" "doseq" "for" "loop"}
                                   parent-fname)
                                  (= 1 parent-pos))]
-        (dbg raw-specs)
-        (dbg options)
+;;         (dbg raw-specs)
+;;         (dbg options)
         (cond
          ;; display arglists for function being applied unless on top of apply
          (and (= fname "apply") (not= pos 0)) (handle-apply raw-specs pos)              
