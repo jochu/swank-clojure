@@ -349,7 +349,7 @@ that symbols accessible in the current namespace go first."
   (list :file (clean-windows-path (.getFile resource))))
 
 (defn- slime-find-resource [#^String file]
-  (let [resource (.getResource (clojure.lang.RT/baseLoader) file)]
+  (if-let [resource (.getResource (clojure.lang.RT/baseLoader) file)]
     (if (= (.getProtocol resource) "jar")
       (slime-zip-resource resource)
       (slime-file-resource resource))))
@@ -386,18 +386,31 @@ that symbols accessible in the current namespace go first."
         path     (slime-find-file filename)]
     `(:location ~path (:line ~line) nil)))
 
+(defn- namespace-to-filename [ns]
+  (str (-> (str ns)
+           (.replaceAll "\\." File/separator)
+           (.replace \- \_ ))
+       ".clj"))
+
 (defslimefn find-definitions-for-emacs [name]
-  (let [sym-name (read-string name)
-        sym-var (ns-resolve (maybe-ns *current-package*) sym-name)]
-    (when-let [meta (and sym-var (meta sym-var))]
-      (if-let [path (slime-find-file (:file meta))]
-        `((~(str "(defn " (:name meta) ")")
-           (:location
-            ~path
-            (:line ~(:line meta))
-            nil)))
-        `((~(str (:name meta))
-           (:error "Source definition not found.")))))))
+  (let [sym-name (read-string name)]
+    (try
+      (let [sym-var (ns-resolve (maybe-ns *current-package*) sym-name)]
+        (when-let [meta (and sym-var (meta sym-var))]
+          (if-let [path (slime-find-file (:file meta))]
+            `((~(str "(defn " (:name meta) ")")
+               (:location
+                ~path
+                (:line ~(:line meta))
+                nil)))
+            `((~(str (:name meta))
+               (:error "Source definition not found."))))))
+      (catch java.lang.ClassNotFoundException e
+        ;; The name is probably that of a namespace
+        (or (when-let [ns (find-ns sym-name)]
+              (when-let [path (slime-find-file (namespace-to-filename ns))]
+                `((~name (:location ~path (:line 1) nil)))))
+            `((~name (:error "Source definition not found."))))))))
 
 (defn who-specializes [class]
   (letfn [(xref-lisp [sym] ; see find-definitions-for-emacs
