@@ -52,8 +52,22 @@
 
 ;;(defmacro dbg[x] `(let [x# ~x] (println '~x "->" x#) x#))
 
-(defn arglists-for-fname [fname]
+(defn defnk-arglists? [arglists]
+  (and (not (nil? arglists ))
+       (not (vector? (first (read-string arglists))))))
+
+(defn fix-defnk-arglists [arglists]
+  (str (list (into [] (read-string arglists)))))
+
+(defn arglists-for-fname-lookup [fname]
   ((slime-fn 'operator-arglist) fname *current-package*))
+
+(defn arglists-for-fname [fname]
+  (let [arglists (arglists-for-fname-lookup fname)]
+    ;; defnk's arglists format is (a b) instead of ([a b])
+    (if (defnk-arglists? arglists)
+      (fix-defnk-arglists arglists)
+      arglists)))
 
 (defn message-format [cmd arglists pos]
   (str (when cmd (str cmd ": "))
