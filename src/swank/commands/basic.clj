@@ -392,25 +392,30 @@ that symbols accessible in the current namespace go first."
            (.replace \- \_ ))
        ".clj"))
 
+(defn- find-ns-definition [ns]
+  (when-let [path (and ns (slime-find-file (namespace-to-filename ns)))]
+    `((~(str ns) (:location ~path (:line 1) nil)))))
+
+(defn- find-var-definition [sym-name]
+  (try
+   (let [sym-var (ns-resolve (maybe-ns *current-package*) sym-name)]
+     (if-let [meta (and sym-var (meta sym-var))]
+       (if-let [path (slime-find-file (:file meta))]
+         `((~(str "(defn " (:name meta) ")")
+            (:location
+             ~path
+             (:line ~(:line meta))
+             nil)))
+         `((~(str (:name meta))
+            (:error "Source definition not found."))))))
+   (catch java.lang.ClassNotFoundException e nil)))
+
 (defslimefn find-definitions-for-emacs [name]
   (let [sym-name (read-string name)]
-    (try
-      (let [sym-var (ns-resolve (maybe-ns *current-package*) sym-name)]
-        (when-let [meta (and sym-var (meta sym-var))]
-          (if-let [path (slime-find-file (:file meta))]
-            `((~(str "(defn " (:name meta) ")")
-               (:location
-                ~path
-                (:line ~(:line meta))
-                nil)))
-            `((~(str (:name meta))
-               (:error "Source definition not found."))))))
-      (catch java.lang.ClassNotFoundException e
-        ;; The name is probably that of a namespace
-        (or (when-let [ns (find-ns sym-name)]
-              (when-let [path (slime-find-file (namespace-to-filename ns))]
-                `((~name (:location ~path (:line 1) nil)))))
-            `((~name (:error "Source definition not found."))))))))
+    (or (find-var-definition sym-name)
+        (find-ns-definition ((ns-aliases (maybe-ns *current-package*)) sym-name))
+        (find-ns-definition (find-ns sym-name))
+        `((~name (:error "Source definition not found."))))))
 
 (defn who-specializes [class]
   (letfn [(xref-lisp [sym] ; see find-definitions-for-emacs
