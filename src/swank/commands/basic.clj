@@ -268,8 +268,7 @@ that symbols accessible in the current namespace go first."
      (apropos-list-for-emacs name external-only? case-sensitive? nil))
   ([name external-only? case-sensitive? package]
      (let [package (when package
-                     (or (find-ns (symbol package))
-                         'user))]
+                     (maybe-ns package))]
        (map briefly-describe-symbol-for-emacs
             (sort present-symbol-before
                   (apropos-symbols name external-only? case-sensitive?
