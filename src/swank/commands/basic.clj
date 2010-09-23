@@ -180,6 +180,11 @@
     (ns-resolve (maybe-ns *current-package*) (symbol symbol-name))
     (catch ClassNotFoundException e nil)))
 
+(defn- maybe-resolve-ns [sym-name]
+  (let [sym (symbol sym-name)]
+    (or ((ns-aliases (maybe-ns *current-package*)) sym)
+        (find-ns sym))))
+
 (defn- describe-to-string [var]
   (with-out-str
     (print-doc var)))
@@ -188,7 +193,10 @@
   (with-emacs-package
     (if-let [v (maybe-resolve-sym symbol-name)]
       (describe-to-string v)
-      (str "Unknown symbol " symbol-name))))
+      (if-let [ns (maybe-resolve-ns symbol-name)]
+        (str (ns-name ns) "\nnamespace containing:"
+             (apply str (map #(str "\n  " %) (keys (ns-publics (find-ns 'clojure.xml))))))
+        (str "Unknown symbol " symbol-name)))))
 
 (defslimefn describe-symbol [symbol-name]
   (describe-symbol* symbol-name))
@@ -418,9 +426,10 @@ that symbols accessible in the current namespace go first."
             (slime-find-file (:file meta))
             (:line meta)))
 
-(defn- find-ns-definition [ns]
-  (when-let [path (and ns (slime-find-file (namespace-to-filename ns)))]
-    (location ns nil path 1)))
+(defn- find-ns-definition [sym-name]
+  (if-let [ns (maybe-resolve-ns sym-name)]
+    (when-let [path (slime-find-file (namespace-to-filename ns))]
+      (location ns nil path 1))))
 
 (defn- find-var-definition [sym-name]
   (if-let [meta (meta (maybe-resolve-sym sym-name))]
@@ -429,8 +438,7 @@ that symbols accessible in the current namespace go first."
 (defslimefn find-definitions-for-emacs [name]
   (let [sym-name (read-string name)]
     (or (find-var-definition sym-name)
-        (find-ns-definition ((ns-aliases (maybe-ns *current-package*)) sym-name))
-        (find-ns-definition (find-ns sym-name))
+        (find-ns-definition sym-name)
         (location name nil nil nil))))
 
 (defn who-specializes [class]
