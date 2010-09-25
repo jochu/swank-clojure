@@ -11,7 +11,7 @@
 			    (potential-completions
 			     (when sym-ns (symbol sym-ns))
 			     (ns-name (maybe-ns package)))
-			    (potintial-classes-on-path symbol-string))
+			    (potential-classes-on-path symbol-string))
          matches           (seq (sort (filter #(split-compound-prefix-match? symbol-string %) potential)))]
      (list matches
            (if matches

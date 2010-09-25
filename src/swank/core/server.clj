@@ -84,7 +84,7 @@
   [port announce-fn connection-serve opts]
   (start-swank-socket-server!
    (make-server-socket {:port    port
-                        :host    (opts :host)
+                        :host    (opts :host "localhost")
                         :backlog (opts :backlog 0)})
    #(socket-serve connection-serve % opts)
    {:announce announce-fn}))

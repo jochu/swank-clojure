@@ -175,16 +175,27 @@
 
 ;;;; Describe
 
+(defn- maybe-resolve-sym [symbol-name]
+  (try
+    (ns-resolve (maybe-ns *current-package*) (symbol symbol-name))
+    (catch ClassNotFoundException e nil)))
+
+(defn- maybe-resolve-ns [sym-name]
+  (let [sym (symbol sym-name)]
+    (or ((ns-aliases (maybe-ns *current-package*)) sym)
+        (find-ns sym))))
+
 (defn- describe-to-string [var]
   (with-out-str
     (print-doc var)))
 
 (defn- describe-symbol* [symbol-name]
   (with-emacs-package
-    (let [v (try (ns-resolve (maybe-ns *current-package*) (symbol symbol-name))
-                 (catch ClassNotFoundException e nil))]
-      (if (var? v)
-        (describe-to-string v)
+    (if-let [v (maybe-resolve-sym symbol-name)]
+      (describe-to-string v)
+      (if-let [ns (maybe-resolve-ns symbol-name)]
+        (str (ns-name ns) "\nnamespace containing:"
+             (apply str (map #(str "\n  " %) (keys (ns-publics (find-ns 'clojure.xml))))))
         (str "Unknown symbol " symbol-name)))))
 
 (defslimefn describe-symbol [symbol-name]
@@ -236,8 +247,7 @@ Sorted alphabetically by namespace name and then symbol name, except
 that symbols accessible in the current namespace go first."
   [x y]
   (let [accessible?
-        (fn [var] (= (ns-resolve (maybe-ns *current-package*)
-                                 (:name (meta var)))
+        (fn [var] (= (maybe-resolve-sym (:name (meta var)))
                      var))
         ax (accessible? x) ay (accessible? y)]
     (cond
@@ -258,8 +268,7 @@ that symbols accessible in the current namespace go first."
      (apropos-list-for-emacs name external-only? case-sensitive? nil))
   ([name external-only? case-sensitive? package]
      (let [package (when package
-                     (or (find-ns (symbol package))
-                         'user))]
+                     (maybe-ns package))]
        (map briefly-describe-symbol-for-emacs
             (sort present-symbol-before
                   (apropos-symbols name external-only? case-sensitive?
@@ -303,7 +312,7 @@ that symbols accessible in the current namespace go first."
       result)))
 
 (defslimefn swank-toggle-trace [fname]
-  (when-let [sym (ns-resolve (maybe-ns *current-package*) (symbol fname))]
+  (when-let [sym (maybe-resolve-sym fname)]
     (if-let [f# (get traced-fn-map sym)]
       (do
         (alter-var-root #'traced-fn-map dissoc sym)
@@ -349,7 +358,7 @@ that symbols accessible in the current namespace go first."
   (list :file (clean-windows-path (.getFile resource))))
 
 (defn- slime-find-resource [#^String file]
-  (let [resource (.getResource (clojure.lang.RT/baseLoader) file)]
+  (if-let [resource (.getResource (clojure.lang.RT/baseLoader) file)]
     (if (= (.getProtocol resource) "jar")
       (slime-zip-resource resource)
       (slime-file-resource resource))))
@@ -371,6 +380,24 @@ that symbols accessible in the current namespace go first."
   (namespace-to-path
    (symbol (.replace class-name \_ \-))))
 
+
+(defn- location-in-file [path line]
+  `(:location ~path (:line ~line) nil))
+
+(defn- location-label [name type]
+  (if type
+    (str "(" type " " name ")")
+    (str name)))
+
+(defn- location [name type path line]
+  `((~(location-label name type)
+     ~(if path
+        (location-in-file path line)
+        (list :error (format "%s - definition not found." name))))))
+
+(defn- location-not-found [name type]
+  (location name type nil nil))
+
 (defn source-location-for-frame [#^StackTraceElement frame]
   (let [line     (.getLineNumber frame)
         filename (if (.. frame getFileName (endsWith ".java"))
@@ -384,55 +411,54 @@ that symbols accessible in the current namespace go first."
                        (str ns-path File/separator (.getFileName frame))
                        (.getFileName frame))))
         path     (slime-find-file filename)]
-    `(:location ~path (:line ~line) nil)))
+    (location-in-file path line)))
+
+(defn- namespace-to-filename [ns]
+  (str (-> (str ns)
+           (.replaceAll "\\." File/separator)
+           (.replace \- \_ ))
+       ".clj"))
+
+(defn- source-location-for-meta [meta xref-type-name]
+  (location (:name meta)
+            xref-type-name
+            (slime-find-file (:file meta))
+            (:line meta)))
+
+(defn- find-ns-definition [sym-name]
+  (if-let [ns (maybe-resolve-ns sym-name)]
+    (when-let [path (slime-find-file (namespace-to-filename ns))]
+      (location ns nil path 1))))
+
+(defn- find-var-definition [sym-name]
+  (if-let [meta (meta (maybe-resolve-sym sym-name))]
+    (source-location-for-meta meta "defn")))
 
 (defslimefn find-definitions-for-emacs [name]
-  (let [sym-name (read-string name)
-        sym-var (ns-resolve (maybe-ns *current-package*) sym-name)]
-    (when-let [meta (and sym-var (meta sym-var))]
-      (if-let [path (slime-find-file (:file meta))]
-        `((~(str "(defn " (:name meta) ")")
-           (:location
-            ~path
-            (:line ~(:line meta))
-            nil)))
-        `((~(str (:name meta))
-           (:error "Source definition not found.")))))))
+  (let [sym-name (read-string name)]
+    (or (find-var-definition sym-name)
+        (find-ns-definition sym-name)
+        (location name nil nil nil))))
 
 (defn who-specializes [class]
   (letfn [(xref-lisp [sym] ; see find-definitions-for-emacs
-            (if-let [meta (and sym (meta sym))]
-              (if-let [path (slime-find-file (:file meta))]
-                      `((~(str "(method " (:name meta) ")")
-                          (:location
-                           ~path
-                           (:line ~(:line meta))
-                           nil)))
-                      `((~(str (:name meta))
-                          (:error "Source definition not found."))))
-              `((~(str "(method " (.getName sym) ")")
-                  (:error ~(format "%s - definition not found." sym))))))]
-         (let [methods (try (. class getMethods)
-                            (catch java.lang.IllegalArgumentException e nil)
-                            (catch java.lang.NullPointerException e nil))]
-              (map xref-lisp methods))))
+                     (if-let [meta (meta sym)]
+                       (source-location-for-meta meta "method")
+                       (location-not-found (.getName sym) "method")))]
+    (let [methods (try (. class getMethods)
+                       (catch java.lang.IllegalArgumentException e nil)
+                       (catch java.lang.NullPointerException e nil))]
+      (map xref-lisp methods))))
 
 (defn who-calls [name]
   (letfn [(xref-lisp [sym-var]        ; see find-definitions-for-emacs
-                     (when-let [meta (and sym-var (meta sym-var))]
-                       (if-let [path (slime-find-file (:file meta))]
-                         `((~(str (:name meta))
-                            (:location
-                             ~path
-                             (:line ~(:line meta))
-                             nil)))
-                         `((~(str (:name meta))
-                            (:error "Source definition not found."))))))]
+                     (when-let [meta (meta sym-var)]
+                       (source-location-for-meta meta nil)))]
     (let [callers (xref/all-vars-who-call name) ]
       (map first (map xref-lisp callers)))))
 
 (defslimefn xref [type name]
-  (let [sexp (ns-resolve (maybe-ns *current-package*) (symbol name))]
+  (let [sexp (maybe-resolve-sym name)]
        (condp = type
               :specializes (who-specializes sexp)
               :calls   (who-calls (symbol name))
@@ -467,7 +493,9 @@ that symbols accessible in the current namespace go first."
 (defslimefn buffer-first-change [file-name] nil)
 
 (defn locals-for-emacs [m]
-  (map #(list :name (name (first %)) :id 0 :value (str (second %))) m))
+  (sort-by second
+           (map #(list :name (name (first %)) :id 0
+                       :value (str (second %))) m)))
 
 (defslimefn frame-catch-tags-for-emacs [n] nil)
 (defslimefn frame-locals-for-emacs [n]
