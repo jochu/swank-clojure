@@ -495,7 +495,7 @@ that symbols accessible in the current namespace go first."
 (defn locals-for-emacs [m]
   (sort-by second
            (map #(list :name (name (first %)) :id 0
-                       :value (str (second %))) m)))
+                       :value (pr-str (second %))) m)))
 
 (defslimefn frame-catch-tags-for-emacs [n] nil)
 (defslimefn frame-locals-for-emacs [n]
