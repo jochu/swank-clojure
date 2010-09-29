@@ -192,11 +192,8 @@
 (defn- describe-symbol* [symbol-name]
   (with-emacs-package
     (if-let [v (maybe-resolve-sym symbol-name)]
-      (describe-to-string v)
-      (if-let [ns (maybe-resolve-ns symbol-name)]
-        (str (ns-name ns) "\nnamespace containing:"
-             (apply str (map #(str "\n  " %) (keys (ns-publics (find-ns 'clojure.xml))))))
-        (str "Unknown symbol " symbol-name)))))
+      (if-not (class? v)
+        (describe-to-string v)))))
 
 (defslimefn describe-symbol [symbol-name]
   (describe-symbol* symbol-name))
@@ -561,4 +558,3 @@ corresponding attribute values per thread."
 
 (defslimefn quit-thread-browser []
   (reset! thread-list []))
-
