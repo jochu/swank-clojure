@@ -39,6 +39,11 @@ Note that due to a bug in clojure-maven-plugin, you currently cannot
 include it as a test-scoped dependency; it must be compile-scoped. You
 also cannot change the port from Maven; it's hard-coded to 4005.
 
+Put this in your Emacs configuration to get syntax highlighting in the
+slime repl:
+
+    (add-hook 'slime-repl-mode-hook 'clojure-mode-font-lock-setup)
+
 ## Connecting with SLIME
 
 Install the "slime-repl" package from ELPA using package.el. When you
