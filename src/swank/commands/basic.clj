@@ -20,13 +20,13 @@
                                      :version ~(clojure-version))
          :package (:name ~(name (ns-name *ns*))
                          :prompt ~(name (ns-name *ns*)))
-         :version ~(deref *protocol-version*)))
+         :version ~(deref protocol-version)))
 
 (defslimefn quit-lisp []
   (System/exit 0))
 
 (defslimefn toggle-debug-on-swank-error []
-  (alter-var-root #'swank.core/*debug-swank-clojure* not))
+  (alter-var-root #'swank.core/debug-swank-clojure not))
 
 ;;;; Evaluation
 
@@ -103,10 +103,10 @@
 
 ;;;; Compiler / Execution
 
-(def *compiler-exception-location-re* #"Exception:.*\(([^:]+):([0-9]+)\)")
+(def compiler-exception-location-re #"Exception:.*\(([^:]+):([0-9]+)\)")
 (defn- guess-compiler-exception-location [#^Throwable t]
   (when (instance? clojure.lang.Compiler$CompilerException t)
-    (let [[match file line] (re-find *compiler-exception-location-re* (str t))]
+    (let [[match file line] (re-find compiler-exception-location-re (str t))]
       (when (and file line)
         `(:location (:file ~file) (:line ~(Integer/parseInt line)) nil)))))
 
@@ -463,7 +463,7 @@ that symbols accessible in the current namespace go first."
               :not-implemented)))
 
 (defslimefn throw-to-toplevel []
-  (throw *debug-quit-exception*))
+  (throw debug-quit-exception))
 
 (defn invoke-restart [restart]
   ((nth restart 2)))

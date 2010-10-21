@@ -12,14 +12,14 @@
 
 ;; LOGGING
 
-(def *log-events* false)
+(def log-events false)
 
-(def *log-output* nil)
+(def log-output nil)
 
 (defn log-event [format-string & args]
-  (when *log-events*
-    (.write (or *log-output* *out*) (apply format format-string args))
-    (.flush (or *log-output* *out*))
+  (when log-events
+    (.write (or log-output *out*) (apply format format-string args))
+    (.flush (or log-output *out*))
     nil))
 
 ;; INPUT

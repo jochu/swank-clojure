@@ -21,7 +21,7 @@
   (:gen-class))
 
 (defn ignore-protocol-version [version]
-  (reset! *protocol-version* version))
+  (reset! protocol-version version))
 
 (defn- connection-serve [conn]
   (let [control
@@ -40,7 +40,7 @@
            (catch Exception e
              ;; This could be put somewhere better
              (.interrupt control)
-             (dosync (alter *connections* (partial remove #{conn}))))))]
+             (dosync (alter connections (partial remove #{conn}))))))]
     (dosync
      (ref-set (conn :control-thread) control)
      (ref-set (conn :read-thread) read))))

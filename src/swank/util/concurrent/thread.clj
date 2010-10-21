@@ -17,7 +17,9 @@
   `(start-thread (keep-bindings ~bindings (fn [] ~@body))))
 
 (defmacro dothread-keeping-clj [more-bindings & body]
-  (let [clj-star-syms (filter #(.startsWith #^String (name %) "*")
+  (let [clj-star-syms (filter #(and (.startsWith #^String (name %) "*")
+                                    (.endsWith #^String (name %) "*")
+                                    (> (count (name %)) 1))
                               (keys (ns-publics (find-ns 'clojure.core))))]
     `(dothread-keeping [~@clj-star-syms ~@more-bindings]
        ~@body)))
