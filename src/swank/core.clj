@@ -9,15 +9,17 @@
 (defonce protocol-version (atom "20100404"))
 
 ;; Emacs packages
-(def ^:dynamic *current-package*)
+(def #^{:dynamic true} *current-package*)
 
 ;; current emacs eval id
-(def ^:dynamic *pending-continuations* '())
+(def #^{:dynamic true} *pending-continuations* '())
 
 (def sldb-stepping-p nil)
 (def sldb-initial-frames 10)
-(def ^:dynamic #^{:doc "The current level of recursive debugging."} *sldb-level* 0)
-(def ^:dynamic #^{:doc "The current restarts."} *sldb-restarts* 0)
+(def #^{:dynamic true} #^{:doc "The current level of recursive debugging."}
+  *sldb-level* 0)
+(def #^{:dynamic true} #^{:doc "The current restarts."}
+  *sldb-restarts* 0)
 
 (def #^{:doc "Include swank-clojure thread in stack trace for debugger."}
      debug-swank-clojure false)
@@ -54,10 +56,10 @@
 (defonce debug-continue-exception (Exception. "Debug continue"))
 (defonce debug-abort-exception (Exception. "Debug abort"))
 
-(def ^:dynamic #^Throwable *current-exception* nil)
+(def #^{:dynamic true} #^Throwable *current-exception* nil)
 
 ;; Local environment
-(def ^:dynamic *current-env* nil)
+(def #^{:dynamic true} *current-env* nil)
 
 (let [&env :unavailable]
   (defmacro local-bindings

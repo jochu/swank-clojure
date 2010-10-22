@@ -12,7 +12,7 @@
   (:use (swank util core commands))
   (:use (swank.util clojure)))
 
-(def ^:dynamic *fuzzy-recursion-soft-limit* 30)
+(def #^{:dynamic true} *fuzzy-recursion-soft-limit* 30)
 (defn- compute-most-completions [short full]
   (let [collect-chunk (fn [[pcur [[pa va] ys]] [pb vb]]
                         (let [xs (if (= (dec pb) pcur)

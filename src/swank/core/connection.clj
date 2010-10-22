@@ -5,7 +5,7 @@
   (:import (java.net ServerSocket Socket InetAddress)
            (java.io InputStreamReader OutputStreamWriter)))
 
-(def ^:dynamic *current-connection*)
+(def #^{:dynamic true} *current-connection*)
 (def default-encoding "iso-8859-1")
 
 (defmacro with-connection [conn & body]
