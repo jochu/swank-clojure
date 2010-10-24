@@ -78,10 +78,10 @@
 
 (defslimefn eval-and-grab-output [string]
   (with-emacs-package
-    (with-local-vars [retval nil]
+    (let [retval (promise)]
       (list (with-out-str
-              (var-set retval (pr-str (first (eval-region string)))))
-            (var-get retval)))))
+              (deliver retval (pr-str (first (eval-region string)))))
+            @retval))))
 
 (defslimefn pprint-eval [string]
   (with-emacs-package
