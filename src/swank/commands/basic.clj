@@ -70,10 +70,9 @@
     (with-package-tracking
       (let [[value last-form] (eval-region form)]
         (when (and last-form (not (one-of? last-form '*1 '*2 '*3 '*e)))
-          ;; (set! *3 *2)
-          ;; (set! *2 *1)
-          ;; (set! *1 value)
-          )
+          (set! *3 *2)
+          (set! *2 *1)
+          (set! *1 value))
         (send-repl-results-to-emacs value)))))
 
 (defslimefn eval-and-grab-output [string]

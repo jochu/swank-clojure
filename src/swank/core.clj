@@ -270,7 +270,7 @@ values."
 
       :else
       (do
-        ;; (set! *e t)
+        (set! *e t)
         (try
          (sldb-debug
           nil
