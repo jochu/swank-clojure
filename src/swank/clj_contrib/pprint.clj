@@ -25,6 +25,8 @@
                     (pp/write ~code :pretty true :stream nil)))
                `(pr-str ~code))))
         true
+        ;; if you just don't have contrib, be silent.
+        (catch ClassNotFoundException _)
         (catch Exception e
           (println e))))))
 
