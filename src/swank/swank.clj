@@ -57,13 +57,21 @@
                   connection-serve
                   opts)))
 
+(def #^{:private true} encodings-map
+  {"UTF-8" "utf-8-unix"
+   })
+
+(defn- get-system-encoding []
+  (when-let [enc-name (.name (java.nio.charset.Charset/defaultCharset))]
+    (encodings-map enc-name)))
+
 (defn start-repl
   "Start the server wrapped in a repl. Use this to embed swank in your code."
   ([port & opts]
      (let [stop (atom false)
            opts (merge {:port (Integer. port)
-                        :encoding (or (System/getProperty
-                                       "swank.encoding")
+                        :encoding (or (System/getProperty "swank.encoding")
+                                      (get-system-encoding)
                                       "iso-latin-1-unix")}
                        (apply hash-map opts))]
        (repl :read (fn [rprompt rexit]
