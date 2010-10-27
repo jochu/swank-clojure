@@ -20,13 +20,13 @@
                                      :version ~(clojure-version))
          :package (:name ~(name (ns-name *ns*))
                          :prompt ~(name (ns-name *ns*)))
-         :version ~(deref *protocol-version*)))
+         :version ~(deref protocol-version)))
 
 (defslimefn quit-lisp []
   (System/exit 0))
 
 (defslimefn toggle-debug-on-swank-error []
-  (alter-var-root #'swank.core/*debug-swank-clojure* not))
+  (alter-var-root #'swank.core/debug-swank-clojure not))
 
 ;;;; Evaluation
 
@@ -77,10 +77,10 @@
 
 (defslimefn eval-and-grab-output [string]
   (with-emacs-package
-    (with-local-vars [retval nil]
+    (let [retval (promise)]
       (list (with-out-str
-              (var-set retval (pr-str (first (eval-region string)))))
-            (var-get retval)))))
+              (deliver retval (pr-str (first (eval-region string)))))
+            @retval))))
 
 (defslimefn pprint-eval [string]
   (with-emacs-package
@@ -103,10 +103,10 @@
 
 ;;;; Compiler / Execution
 
-(def *compiler-exception-location-re* #"Exception:.*\(([^:]+):([0-9]+)\)")
+(def compiler-exception-location-re #"Exception:.*\(([^:]+):([0-9]+)\)")
 (defn- guess-compiler-exception-location [#^Throwable t]
   (when (instance? clojure.lang.Compiler$CompilerException t)
-    (let [[match file line] (re-find *compiler-exception-location-re* (str t))]
+    (let [[match file line] (re-find compiler-exception-location-re (str t))]
       (when (and file line)
         `(:location (:file ~file) (:line ~(Integer/parseInt line)) nil)))))
 
@@ -192,11 +192,8 @@
 (defn- describe-symbol* [symbol-name]
   (with-emacs-package
     (if-let [v (maybe-resolve-sym symbol-name)]
-      (describe-to-string v)
-      (if-let [ns (maybe-resolve-ns symbol-name)]
-        (str (ns-name ns) "\nnamespace containing:"
-             (apply str (map #(str "\n  " %) (keys (ns-publics (find-ns 'clojure.xml))))))
-        (str "Unknown symbol " symbol-name)))))
+      (if-not (class? v)
+        (describe-to-string v)))))
 
 (defslimefn describe-symbol [symbol-name]
   (describe-symbol* symbol-name))
@@ -303,12 +300,20 @@ that symbols accessible in the current namespace go first."
 
 (defonce traced-fn-map {})
 
+(def *trace-level* 0)
+
+(defn- indent [num]
+  (dotimes [x (+ 1 num)]
+    (print "  ")))
+
 (defn- trace-fn-call [sym f args]
   (let [fname (symbol (str (.name (.ns sym)) "/" (.sym sym)))]
-    (println (str "Calling")
+    (indent *trace-level*)
+    (println (str *trace-level* ":")
              (apply str (take 240 (pr-str (when fname (cons fname args)) ))))
-    (let [result (apply f args)]
-      (println (str fname " returned " (apply str (take 240 (pr-str result)))))
+    (let [result (binding [*trace-level* (+ *trace-level* 1)] (apply f args))]
+      (indent *trace-level*)
+      (println (str *trace-level* ": " fname " returned " (apply str (take 240 (pr-str result)))))
       result)))
 
 (defslimefn swank-toggle-trace [fname]
@@ -466,7 +471,7 @@ that symbols accessible in the current namespace go first."
               :not-implemented)))
 
 (defslimefn throw-to-toplevel []
-  (throw *debug-quit-exception*))
+  (throw debug-quit-exception))
 
 (defn invoke-restart [restart]
   ((nth restart 2)))
@@ -495,7 +500,7 @@ that symbols accessible in the current namespace go first."
 (defn locals-for-emacs [m]
   (sort-by second
            (map #(list :name (name (first %)) :id 0
-                       :value (str (second %))) m)))
+                       :value (pr-str (second %))) m)))
 
 (defslimefn frame-catch-tags-for-emacs [n] nil)
 (defslimefn frame-locals-for-emacs [n]
@@ -561,4 +566,3 @@ corresponding attribute values per thread."
 
 (defslimefn quit-thread-browser []
   (reset! thread-list []))
-

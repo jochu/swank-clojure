@@ -5,12 +5,12 @@
 
 ;; Read forms
 (def #^{:private true}
-     *namespace-re* #"(^\(:emacs-rex \([a-zA-Z][a-zA-Z0-9]+):")
+     namespace-re #"(^\(:emacs-rex \([a-zA-Z][a-zA-Z0-9]+):")
 
 (defn- fix-namespace
   "Changes the namespace of a function call from pkg:fn to ns/fn. If
    no pkg exists, then nothing is done."
-  ([text] (.replaceAll (re-matcher *namespace-re* text) "$1/")))
+  ([text] (.replaceAll (re-matcher namespace-re text) "$1/")))
 
 (defn write-swank-message
   "Given a `writer' (java.io.Writer) and a `message' (typically an
