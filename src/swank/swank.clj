@@ -12,6 +12,7 @@
   (:use [swank.core]
         [swank.core connection server]
         [swank.util.concurrent thread]
+        [swank.util.net sockets]
         [clojure.main :only [repl]])
   (:require [swank.commands]
             [swank.commands basic indent completion
@@ -31,7 +32,8 @@
            (control-loop conn)
            (catch Exception e
              ;; fail silently
-             nil)))
+             nil))
+          (close-socket! (conn :socket)))
         read
         (dothread-swank
           (thread-set-name "Read Loop Thread")
