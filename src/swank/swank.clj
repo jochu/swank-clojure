@@ -39,6 +39,8 @@
            (read-loop conn control)
            (catch Exception e
              ;; This could be put somewhere better
+             (.println System/err "exception in read loop")
+             (.printStackTrace e)
              (.interrupt control)
              (dosync (alter connections (partial remove #{conn}))))))]
     (dosync
