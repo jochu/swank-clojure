@@ -40,7 +40,11 @@
   ([#^java.io.Reader reader]
      (let [len  (Integer/parseInt (read-chars reader 6 read-fail-exception) 16)
            msg  (read-chars reader len read-fail-exception)
-           form (read-string (fix-namespace msg))]
+           form (try
+                  (read-string (fix-namespace msg))
+                  (catch Exception ex
+                    (.println System/err (format "unreadable message: %s" msg))
+                    (throw ex)))]
        (if (seq? form)
          (deep-replace {'t true} form)
          form))))
