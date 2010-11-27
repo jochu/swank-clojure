@@ -86,7 +86,7 @@
                                                 (File. "slime-port.txt")
                                                 (.getCanonicalPath))
                                             ~@(apply concat opts)))))
-             :need-prompt #(identity false))))
+             :need-prompt (constantly false))))
   ([] (start-repl 4005)))
 
 (def -main start-repl)
