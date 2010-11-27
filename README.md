@@ -8,9 +8,19 @@ from within Emacs.
 
 ## Usage
 
-Add Swank Clojure to your project as a development dependency to your
-project. If you are using Leiningen, add it to your project.clj file
-under :dev-dependencies:
+If you just want a standalone swank server with no third-party
+libraries, you can just install swank-clojure using Leiningen.
+
+    $ lein install swank-clojure 1.3.0-SNAPSHOT
+    $ ~/.lein/bin/swank-clojure
+
+    M-x slime-connect
+
+If you put ~/.lein/bin on your $PATH it's even more convenient.
+
+To use Swank Clojure in your project, add it as a development
+dependency. If you are using Leiningen, add it to your project.clj
+file under :dev-dependencies:
 
     :dev-dependencies [[swank-clojure "1.2.1"]]
 
