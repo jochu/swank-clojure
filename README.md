@@ -56,16 +56,21 @@ slime repl:
 
 ## Connecting with SLIME
 
-Install the "slime-repl" package from ELPA using package.el. When you
-perform the installation, you will see warnings related to the
-byte-compilation of the packages. This is **normal**; the packages
+Install the "slime-repl" package using package.el. If you are using
+Emacs 23, it's best to get [the latest version of package.el from
+Emacs
+trunk](http://repo.or.cz/w/emacs.git/blob_plain/HEAD:/lisp/emacs-lisp/package.el). Then
+add Technomancy as an archive source:
+
+    (add-to-list 'package-archives
+                 '("technomancy" . "http://repo.technomancy.us/emacs/") t)
+
+Then you can do <kbd>M-x package-install</kbd> and choose slime-repl.
+
+When you perform the installation, you will see warnings related to
+the byte-compilation of the packages. This is **normal**; the packages
 will work just fine even if there are problems byte-compiling it upon
 installation.
-
-There is a known bug in the latest release of package.el that can
-cause packages to fail to install in certain circumstances. The
-[version with the fixes applied](http://github.com/technomancy/package.el)
-is available on Github.
 
 Then you should be able to connect to the swank server you launched:
 
