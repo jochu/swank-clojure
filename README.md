@@ -59,7 +59,7 @@ slime repl:
 Install the "slime-repl" package using package.el. If you are using
 Emacs 23, it's best to get [the latest version of package.el from
 Emacs
-trunk](http://repo.or.cz/w/emacs.git/blob_plain/HEAD:/lisp/emacs-lisp/package.el). Then
+trunk](http://bit.ly/pkg-el). Then
 add Technomancy as an archive source:
 
     (add-to-list 'package-archives
