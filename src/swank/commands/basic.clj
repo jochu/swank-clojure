@@ -322,7 +322,7 @@ that symbols accessible in the current namespace go first."
 
 (defonce traced-fn-map {})
 
-(def ^:dynamic *trace-level* 0)
+(def #^{:dynamic true} *trace-level* 0)
 
 (defn- indent [num]
   (dotimes [x (+ 1 num)]
