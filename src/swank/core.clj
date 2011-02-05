@@ -274,7 +274,7 @@ values."
         (try
          (sldb-debug
           nil
-          (if debug-swank-clojure t (.getCause t))
+          (if debug-swank-clojure t (or (.getCause t) t))
           id)
          ;; reply with abort
          (finally (send-to-emacs `(:return ~(thread-name (current-thread)) (:abort) ~id)))))))))
