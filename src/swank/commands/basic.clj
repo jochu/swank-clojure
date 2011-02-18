@@ -1,5 +1,5 @@
 (ns swank.commands.basic
-  (:refer-clojure :exclude [load-file])
+  (:refer-clojure :exclude [load-file print-doc])
   (:use (swank util commands core)
         (swank.util.concurrent thread)
         (swank.util string clojure)
@@ -185,18 +185,18 @@
     (or ((ns-aliases (maybe-ns *current-package*)) sym)
         (find-ns sym))))
 
-(defn- print-doc [m]
+(defn- print-doc* [m]
   (println "-------------------------")
   (println (str (when-let [ns (:ns m)] (str (ns-name ns) "/")) (:name m)))
   (cond
-    (:forms m) (doseq [f (:forms m)]
-                 (print "  ")
-                 (prn f))
-    (:arglists m) (prn (:arglists m)))
+   (:forms m) (doseq [f (:forms m)]
+                (print "  ")
+                (prn f))
+   (:arglists m) (prn (:arglists m)))
   (if (:special-form m)
     (do
       (println "Special Form")
-      (println " " (:doc m)) 
+      (println " " (:doc m))
       (if (contains? m :url)
         (when (:url m)
           (println (str "\n  Please see http://clojure.org/" (:url m))))
@@ -204,8 +204,12 @@
                       (:name m)))))
     (do
       (when (:macro m)
-        (println "Macro")) 
+        (println "Macro"))
       (println " " (:doc m)))))
+
+(def print-doc (if (-> #'clojure.core/print-doc meta :private)
+                 print-doc*
+                 clojure.core/print-doc))
 
 (defn- describe-to-string [var]
   (with-out-str
