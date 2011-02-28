@@ -207,9 +207,9 @@
         (println "Macro"))
       (println " " (:doc m)))))
 
-(def print-doc (if (-> #'clojure.core/print-doc meta :private)
+(def print-doc (if (-> (resolve 'clojure.core/print-doc) meta :private)
                  print-doc*
-                 clojure.core/print-doc))
+                 (resolve 'clojure.core/print-doc)))
 
 (defn- describe-to-string [var]
   (with-out-str
