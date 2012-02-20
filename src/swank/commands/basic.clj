@@ -213,7 +213,7 @@
 
 (defn- describe-to-string [var]
   (with-out-str
-    (print-doc var)))
+    (print-doc (meta var))))
 
 (defn- describe-symbol* [symbol-name]
   (with-emacs-package
