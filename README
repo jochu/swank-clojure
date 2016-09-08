@@ -39,7 +39,7 @@ Installation
       target/dependency - added if pom.xml exists (maven-style)
 
 
-Copyright (C) 2008-2016 Jeffrey Zhu, Phil Hagelberg
+Copyright (C) 2008-2016 Jeffrey Xu, Phil Hagelberg
 
 This file is licensed under the terms of the GNU General Public
 License as distributed with Emacs (press C-h C-c to view it).
