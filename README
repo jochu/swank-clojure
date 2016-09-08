@@ -7,7 +7,7 @@ Installation
 
 1. Install clojure-mode.el. Either use ELPA[1] or get it manually
    install from source[2].
-        
+
 2. Invoke M-x clojure-install and follow the directions given. This
    will download and configure swank-clojure as well as other
    dependencies.
@@ -35,11 +35,11 @@ Installation
 
   * src/ and test/ - added to the classpath
   * lib/ - all .jars in here are added to the classpath
-  * src/main/clojure, src/test/, target/classes, 
+  * src/main/clojure, src/test/, target/classes,
       target/dependency - added if pom.xml exists (maven-style)
-    
 
-Copyright (C) 2008-2016 Jeffrey Chu, Phil Hagelberg
+
+Copyright (C) 2008-2016 Jeffrey Zhu, Phil Hagelberg
 
 This file is licensed under the terms of the GNU General Public
 License as distributed with Emacs (press C-h C-c to view it).
